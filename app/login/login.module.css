@@ -1,0 +1,254 @@
+.card {
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  background: var(--bg-left);
+  position: relative;
+  border-bottom: 7px solid transparent;
+  border-image: linear-gradient(
+      90deg,
+      var(--yellow-1) 0%,
+      var(--yellow-2) 30%,
+      rgba(224, 142, 0, 0) 100%
+    )
+    1;
+}
+
+.card::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 7px;
+  background: linear-gradient(
+    0deg,
+    var(--yellow-1) 0%,
+    var(--yellow-2) 30%,
+    rgba(224, 142, 0, 0) 100%
+  );
+  z-index: 2;
+}
+
+/* ---------- Left panel ---------- */
+.panelLeft {
+  flex: 1 1 50%;
+  padding: 56px 64px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+  min-width: 0;
+}
+
+.logo {
+  position: absolute;
+  top: 56px;
+  left: 64px;
+  display: flex;
+  align-items: center;
+}
+.logo img {
+  height: 110px;
+  width: auto;
+  display: block;
+}
+
+.pitch {
+  margin-top: 0;
+}
+.pitch h1 {
+  font-size: 38px;
+  line-height: 1.25;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0 0 12px;
+  letter-spacing: -0.2px;
+}
+.pitch p {
+  font-size: 18px;
+  line-height: 1.55;
+  color: var(--text-muted);
+  margin: 0;
+  max-width: 34ch;
+}
+
+/* ---------- Right panel ---------- */
+.panelRight {
+  flex: 1 1 50%;
+  padding: 56px 64px;
+  background: radial-gradient(
+      120% 90% at 78% 30%,
+      rgba(242, 169, 12, 0.05),
+      transparent 60%
+    ),
+    var(--bg-right);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.panelRight::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--yellow-2);
+}
+
+.watermark {
+  position: absolute;
+  left: 50%;
+  top: 52%;
+  transform: translate(-50%, -50%);
+  width: 440px;
+  height: 440px;
+  opacity: 0.14;
+  background-image: url("/protecti-logo.png");
+  background-position: center;
+  background-size: contain;
+  background-repeat: no-repeat;
+  filter: grayscale(0.25);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.formWrap {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 410px;
+}
+
+.formWrap h2 {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0 0 6px;
+  letter-spacing: -0.2px;
+}
+.sub {
+  font-size: 16.5px;
+  line-height: 1.5;
+  color: var(--text-muted);
+  margin: 0 0 26px;
+}
+
+.field {
+  margin-bottom: 16px;
+}
+.field label {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--text-label);
+  text-transform: uppercase;
+  margin-bottom: 7px;
+}
+.field input {
+  width: 100%;
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  font-size: 17px;
+  color: var(--text-main);
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.field input::placeholder {
+  color: #59595d;
+}
+.field input:focus {
+  border-color: var(--yellow-2);
+  box-shadow: 0 0 0 3px rgba(242, 169, 12, 0.15);
+}
+
+.btn {
+  width: 100%;
+  border: none;
+  border-radius: 8px;
+  padding: 15px 16px;
+  font-size: 17px;
+  font-weight: 700;
+  font-family: inherit;
+  color: #1a1200;
+  background: linear-gradient(180deg, var(--yellow-1), var(--yellow-2));
+  cursor: pointer;
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: filter 0.15s ease, transform 0.05s ease;
+}
+.btn:hover {
+  filter: brightness(1.06);
+}
+.btn:active {
+  transform: translateY(1px);
+}
+
+.belowLink {
+  text-align: center;
+  margin-top: 18px;
+}
+.belowLink a,
+.backLink {
+  font-size: 15px;
+  color: var(--text-muted);
+  text-decoration: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+.belowLink a:hover,
+.backLink:hover {
+  color: var(--text-main);
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+@media (max-width: 720px) {
+  .card {
+    flex-direction: column;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+  .panelRight {
+    border-left: none;
+    border-top: 1px solid var(--border);
+  }
+  .panelLeft,
+  .panelRight {
+    padding: 32px 28px;
+  }
+  .panelLeft {
+    flex: 0 0 auto;
+    justify-content: flex-start;
+  }
+  .panelRight {
+    flex: 1 1 auto;
+  }
+  .logo {
+    position: static;
+    margin-bottom: 32px;
+  }
+  .logo img {
+    height: 72px;
+  }
+}
