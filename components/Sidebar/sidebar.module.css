@@ -1,0 +1,104 @@
+.sidebar {
+  flex: 0 0 280px;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--bg-left);
+  border-right: 1px solid var(--border);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 32px 24px;
+}
+
+.sidebar::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 5px;
+  background: linear-gradient(
+    0deg,
+    var(--yellow-1) 0%,
+    var(--yellow-2) 30%,
+    rgba(224, 142, 0, 0) 100%
+  );
+}
+
+.logo {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 28px;
+}
+.logo img {
+  height: 149px;
+  width: auto;
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 15.5px;
+  font-weight: 500;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.navItem:hover {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.03);
+}
+.navItemActive {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--yellow-1);
+}
+.navItemActive:hover {
+  color: var(--yellow-1);
+}
+
+.userCard {
+  border: 1px solid var(--yellow-2);
+  border-radius: 10px;
+  padding: 16px;
+  margin-top: 16px;
+}
+.userName {
+  margin: 0 0 2px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+.userRole {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.logout {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13.5px;
+  color: var(--text-muted);
+  text-decoration: none;
+}
+.logout:hover {
+  color: var(--text-main);
+}
+
+@media (max-width: 900px) {
+  .sidebar {
+    flex: 0 0 auto;
+    width: 100%;
+    min-height: auto;
+  }
+}

@@ -1,12 +1,15 @@
 "use client";
 
 import { useState, FormEvent } from "react";
+import { useRouter } from 'next/navigation'; 
 import Image from "next/image";
 import styles from "../app/login/login.module.css";
 
 type View = "login" | "recover";
 
 export default function LoginForm() {
+  const router = useRouter();
+
   const [view, setView] = useState<View>("login");
   const [matricula, setMatricula] = useState("");
   const [senha, setSenha] = useState("");
@@ -17,6 +20,7 @@ export default function LoginForm() {
     e.preventDefault();
     // TODO: integrar com o endpoint de autenticação
     console.log("login attempt", { matricula });
+    router.push("/dashboard");
   }
 
   function handleRecover(e: FormEvent) {
