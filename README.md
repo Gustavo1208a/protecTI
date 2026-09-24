@@ -44,7 +44,7 @@ O protecTI será um sistema web integrado a um armário inteligente utilizando A
 - Texto: Inter Regular
 
 ### 🔷 Logotipo
-![Logo](./images/logo.png)
+![Logo](./public/protecti-logo.png)
 
 ## 🛠️ Tecnologias
 React

@@ -3,7 +3,7 @@
 import { useState, FormEvent } from "react";
 import { useRouter } from 'next/navigation'; 
 import Image from "next/image";
-import styles from "../app/login/login.module.css";
+import styles from "./login.module.css";
 
 type View = "login" | "recover";
 

@@ -39,6 +39,7 @@ export default function Sidebar({
   return (
     <aside className={styles.sidebar}>
       <div className={styles.logo}>
+        <a href="/dashboard">
         <Image
           src="/protecti-logo.png"
           alt="protecTI"
@@ -46,6 +47,7 @@ export default function Sidebar({
           height={110}
           priority
         />
+        </a>
       </div>
 
       <nav className={styles.nav}>

@@ -1,0 +1,185 @@
+.page {
+    display: flex;
+    min-height: 100vh;
+    min-height: 100dvh;
+    background: var(--bg-right);
+    position: relative;
+    border-bottom: 6px solid transparent;
+    border-image: linear-gradient(
+        90deg,
+        var(--yellow-1) 0%,
+        var(--yellow-2) 30%,
+        rgba(224, 142, 0, 0) 100%
+      )
+      1;
+  }
+  
+  .main {
+    flex: 1;
+    position: relative;
+    padding: 40px 56px 64px;
+    overflow: hidden;
+  }
+  
+  .watermark {
+    position: absolute;
+    left: 50%;
+    top: 44%;
+    transform: translate(-50%, -50%);
+    width: 560px;
+    height: 560px;
+    background-image: url("/protecti-logo.png");
+    background-position: center;
+    background-size: contain;
+    background-repeat: no-repeat;
+    opacity: 0.09;
+    filter: grayscale(0.25);
+    pointer-events: none;
+    z-index: 0;
+  }
+  
+  .backLink {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: var(--text-muted);
+    text-decoration: none;
+    margin-bottom: 20px;
+  }
+  .backLink:hover {
+    color: var(--text-main);
+  }
+  
+  .title {
+    position: relative;
+    z-index: 1;
+    margin: 0 0 28px;
+    font-size: 34px;
+    font-weight: 800;
+    color: var(--text-main);
+    letter-spacing: -0.4px;
+  }
+  
+  .formCard {
+    position: relative;
+    z-index: 1;
+    max-width: 640px;
+    background: var(--bg-left);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 32px;
+  }
+  
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px 28px;
+    margin-bottom: 24px;
+  }
+  
+  .field {
+    display: flex;
+    flex-direction: column;
+  }
+  .field label {
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-label);
+    margin-bottom: 8px;
+  }
+  .field input,
+  .field select {
+    background: var(--input-bg);
+    border: 1px solid var(--yellow-2);
+    border-radius: 8px;
+    padding: 11px 13px;
+    font-size: 14.5px;
+    color: var(--text-main);
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+  .field input::placeholder {
+    color: #6a6a6e;
+  }
+  .field input[type="date"] {
+    color-scheme: dark;
+  }
+  .field input:focus,
+  .field select:focus {
+    border-color: var(--yellow-1);
+    box-shadow: 0 0 0 3px rgba(242, 169, 12, 0.15);
+  }
+  .field select {
+    appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239a9a9e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
+    padding-right: 36px;
+    cursor: pointer;
+  }
+  
+  .actions {
+    display: flex;
+    gap: 14px;
+  }
+  
+  .submitBtn {
+    border: none;
+    border-radius: 8px;
+    padding: 12px 28px;
+    font-size: 14.5px;
+    font-weight: 700;
+    font-family: inherit;
+    color: #1a1200;
+    background: linear-gradient(180deg, var(--yellow-1), var(--yellow-2));
+    cursor: pointer;
+    transition: filter 0.15s ease, transform 0.05s ease;
+  }
+  .submitBtn:hover {
+    filter: brightness(1.06);
+  }
+  .submitBtn:active {
+    transform: translateY(1px);
+  }
+  
+  .cancelBtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--input-border);
+    border-radius: 8px;
+    padding: 12px 26px;
+    font-size: 14.5px;
+    font-weight: 600;
+    color: var(--text-main);
+    background: transparent;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+  .cancelBtn:hover {
+    background: rgba(255, 255, 255, 0.04);
+  }
+  
+  @media (max-width: 900px) {
+    .page {
+      flex-direction: column;
+    }
+    .main {
+      padding: 32px 24px;
+    }
+    .formCard {
+      max-width: none;
+      padding: 24px;
+    }
+    .grid {
+      grid-template-columns: 1fr;
+    }
+  }
