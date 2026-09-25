@@ -1,0 +1,336 @@
+.page {
+  box-sizing: border-box;
+  display: flex;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--bg-right);
+  position: relative;
+
+  border-bottom: 6px solid transparent;
+  border-image: linear-gradient(
+      90deg,
+      var(--yellow-1) 0%,
+      var(--yellow-2) 30%,
+      rgba(224, 142, 0, 0) 100%
+    )
+    1;
+}
+
+.main {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  position: relative;
+  padding: 48px 56px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.watermark {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  transform: translate(-50%, -50%);
+  width: 720px;
+  height: 720px;
+  background-image: url("/protecti-logo.png");
+  background-position: center;
+  background-size: contain;
+  background-repeat: no-repeat;
+  opacity: 0.09;
+  filter: grayscale(0.25);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.header {
+  position: relative;
+  z-index: 1;
+  margin-bottom: 28px;
+}
+
+.eyebrow {
+  margin: 0 0 4px;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--yellow-1);
+}
+
+.title {
+  margin: 0;
+  font-size: 40px;
+  font-weight: 800;
+  color: var(--text-main);
+  letter-spacing: -0.4px;
+  line-height: 1.05;
+}
+
+/* ---------- Painéis ---------- */
+.grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 32px;
+  max-width: 1000px;
+  margin: 0 auto 32px;
+  align-items: start;
+}
+
+.card {
+  border: 1px solid var(--yellow-2);
+  border-radius: 16px;
+  padding: 20px 24px 24px;
+  background: rgba(20, 20, 22, 0.55);
+  display: flex;
+  flex-direction: column;
+}
+
+.cardTitle {
+  margin: 0 0 14px;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.cardSubtitle {
+  margin: -10px 0 14px;
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+/* ---------- Formulário ---------- */
+.fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 16px;
+  margin-bottom: 18px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.field label {
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-label);
+  margin-bottom: 5px;
+}
+.field input,
+.field select {
+  width: 100%;
+  background: var(--input-bg);
+  border: 1px solid var(--yellow-2);
+  border-radius: 6px;
+  padding: 7px 10px;
+  font-size: 13px;
+  color: var(--text-main);
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.field input::placeholder {
+  color: #6a6a6e;
+}
+.field input:focus,
+.field select:focus {
+  border-color: var(--yellow-1);
+  box-shadow: 0 0 0 3px rgba(242, 169, 12, 0.15);
+}
+.field select {
+  appearance: none;
+  text-overflow: ellipsis;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239a9a9e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 14px;
+  padding-right: 28px;
+  cursor: pointer;
+}
+
+.registrarBtn {
+  align-self: flex-start;
+  border: none;
+  border-radius: 6px;
+  padding: 9px 28px;
+  background: #fbc531;
+  color: #1a1a1a;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter 0.15s ease, transform 0.05s ease;
+}
+.registrarBtn:hover {
+  filter: brightness(1.06);
+}
+.registrarBtn:active {
+  transform: translateY(1px);
+}
+
+.confirmBanner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 12px 14px;
+  background: rgba(20, 110, 55, 0.35);
+  border: 1px solid #1f8f45;
+  border-radius: 8px;
+}
+.confirmIcon {
+  flex: none;
+  margin-top: 1px;
+  color: #34d36b;
+}
+.confirmTitle {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #eafff1;
+}
+.confirmSubtitle {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: #b9e7c8;
+}
+
+/* ---------- EPIs pendentes ---------- */
+.pendentesList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pendenteItem {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(242, 169, 12, 0.35);
+  border-radius: 10px;
+}
+
+.pendenteNome {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+.pendenteMeta {
+  margin: 3px 0 0;
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+.badgeAtivo {
+  flex: none;
+  padding: 2px 12px;
+  border: 1px solid #1f8f45;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #34d36b;
+  background: rgba(31, 107, 63, 0.4);
+  white-space: nowrap;
+}
+
+/* ---------- Devoluções recentes ---------- */
+.sectionTitle {
+  position: relative;
+  z-index: 1;
+  max-width: 1000px;
+  margin: 0 auto 10px;
+  padding-left: 4px;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.tableCard {
+  position: relative;
+  z-index: 1;
+  max-width: 1000px;
+  margin: 0 auto;
+  border: 1px solid var(--yellow-2);
+  border-radius: 16px;
+  overflow: hidden;
+  background: rgba(20, 20, 22, 0.55);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 2fr 0.8fr 1.4fr;
+  align-items: center;
+  gap: 12px;
+  padding: 0 24px;
+}
+
+.tableHead {
+  height: 48px;
+  border-bottom: 1px solid rgba(242, 169, 12, 0.6);
+}
+.tableHead span {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.tableRow {
+  height: 56px;
+  border-bottom: 1px solid rgba(242, 169, 12, 0.3);
+}
+.tableRow:last-child {
+  border-bottom: none;
+}
+.tableRow span {
+  font-size: 13.5px;
+  color: var(--text-main);
+}
+
+.idCell {
+  font-weight: 700;
+  color: var(--yellow-1) !important;
+}
+.funcionarioCell {
+  font-weight: 600;
+}
+
+@media (max-width: 900px) {
+  .page {
+    flex-direction: column;
+    height: auto;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+  .main {
+    overflow: visible;
+    padding: 32px 24px;
+  }
+  .grid {
+    grid-template-columns: 1fr;
+  }
+  .fields {
+    grid-template-columns: 1fr;
+  }
+  .row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+    padding: 14px 20px;
+    height: auto;
+  }
+  .tableHead {
+    display: none;
+  }
+}
