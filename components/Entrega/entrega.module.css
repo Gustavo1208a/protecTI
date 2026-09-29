@@ -1,0 +1,333 @@
+.page {
+  box-sizing: border-box;
+  display: flex;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--bg-right);
+  position: relative;
+
+  border-bottom: 6px solid transparent;
+  border-image: linear-gradient(
+      90deg,
+      var(--yellow-1) 0%,
+      var(--yellow-2) 30%,
+      rgba(224, 142, 0, 0) 100%
+    )
+    1;
+}
+
+.main {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  position: relative;
+  padding: 48px 56px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.watermark {
+  position: absolute;
+  left: 50%;
+  top: 52%;
+  transform: translate(-50%, -50%);
+  width: 720px;
+  height: 720px;
+  background-image: url("/protecti-logo.png");
+  background-position: center;
+  background-size: contain;
+  background-repeat: no-repeat;
+  opacity: 0.09;
+  filter: grayscale(0.25);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.header {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  gap: 20px;
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--yellow-1);
+}
+
+.title {
+  margin: 0;
+  font-size: 40px;
+  font-weight: 800;
+  color: var(--text-main);
+  letter-spacing: -0.4px;
+  line-height: 1.05;
+}
+
+.backBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  padding: 4px 6px;
+  background: transparent;
+  border: none;
+  font-family: inherit;
+  font-size: 16px;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.backBtn:hover {
+  color: var(--text-main);
+}
+
+/* ---------- Abas / etapas ---------- */
+.tabs {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin-bottom: 40px;
+}
+
+.tab {
+  width: 143px;
+  height: 32px;
+  border: 1px solid var(--yellow-2);
+  border-radius: 999px;
+  background: #232326;
+  color: var(--yellow-1);
+  font-family: inherit;
+  font-size: 14.5px;
+  font-weight: 500;
+  cursor: default;
+}
+.tabDone {
+  background: #0f7a2b;
+  border-color: #0f7a2b;
+  color: #3edc72;
+  cursor: pointer;
+}
+.tabDone:hover {
+  filter: brightness(1.1);
+}
+
+/* ---------- Cards ---------- */
+.cards {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px 34px;
+  max-width: 740px;
+}
+
+.card {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto 1fr auto;
+  align-items: start;
+  column-gap: 12px;
+  min-height: 104px;
+  padding: 16px 20px 12px;
+  text-align: left;
+  font-family: inherit;
+  background: rgba(28, 28, 30, 0.88);
+  border: 1px solid var(--yellow-2);
+  border-radius: 14px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.05s ease;
+}
+.card:hover {
+  background: rgba(40, 40, 43, 0.95);
+  border-color: var(--yellow-1);
+}
+.card:active {
+  transform: translateY(1px);
+}
+.card:focus-visible {
+  outline: 2px solid var(--yellow-1);
+  outline-offset: 2px;
+}
+.cardDisabled {
+  cursor: not-allowed;
+}
+.cardDisabled:hover {
+  background: rgba(28, 28, 30, 0.88);
+  border-color: var(--yellow-2);
+}
+.cardDisabled:active {
+  transform: none;
+}
+
+.cardName {
+  grid-column: 1;
+  grid-row: 1;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-main);
+  line-height: 1.3;
+}
+.cardNameMuted {
+  grid-row: 1 / span 2;
+  font-size: 16px;
+  font-weight: 400;
+  color: var(--text-label);
+  max-width: 190px;
+}
+
+.cardTag {
+  grid-column: 2;
+  grid-row: 1;
+  font-size: 12.5px;
+  color: var(--yellow-1);
+  white-space: nowrap;
+}
+
+.cardRole {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  margin-top: 6px;
+  font-size: 15px;
+  color: var(--text-label);
+}
+
+.cardMeta {
+  grid-column: 1 / -1;
+  grid-row: 3;
+  align-self: end;
+  font-size: 11.5px;
+  color: var(--yellow-1);
+}
+
+.badge {
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: end;
+  min-width: 90px;
+  padding: 2px 12px;
+  border: 1px solid;
+  border-radius: 999px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 400;
+  background: transparent;
+}
+.badgeDisponivel {
+  color: #2fd066;
+  border-color: #1f8f45;
+}
+.badgeVencido {
+  color: #f0343d;
+  border-color: #c0272d;
+}
+
+/* ---------- Confirmar entrega ---------- */
+.confirmCard {
+  position: relative;
+  z-index: 1;
+  width: min(460px, 100%);
+  margin: 56px auto 0;
+  padding: 22px 40px 36px;
+  background: #27272a;
+  border: 1px solid #4a4a4e;
+  border-radius: 8px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+}
+
+.confirmTitle {
+  margin: 0 0 26px;
+  text-align: center;
+  font-size: 29px;
+  font-weight: 400;
+  color: var(--text-main);
+}
+
+.confirmFields {
+  display: grid;
+  grid-template-columns: 112px 1fr;
+  align-items: center;
+  gap: 12px 12px;
+  margin-bottom: 36px;
+}
+.confirmFields label {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-label);
+}
+.confirmFields input {
+  width: 100%;
+  max-width: 214px;
+  height: 25px;
+  padding: 0 8px;
+  background: var(--input-bg);
+  border: 1px solid var(--yellow-2);
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 12.5px;
+  color: var(--text-main);
+  outline: none;
+  text-overflow: ellipsis;
+}
+
+.confirmBtn {
+  display: block;
+  margin: 0 auto;
+  height: 37px;
+  padding: 0 38px;
+  border: none;
+  border-radius: 4px;
+  background: #e5c552;
+  color: #1a1a1a;
+  font-family: inherit;
+  font-size: 15.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter 0.15s ease, transform 0.05s ease;
+}
+.confirmBtn:hover {
+  filter: brightness(1.06);
+}
+.confirmBtn:active {
+  transform: translateY(1px);
+}
+
+@media (max-width: 900px) {
+  .page {
+    flex-direction: column;
+    height: auto;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+  .main {
+    overflow: visible;
+    padding: 32px 24px;
+  }
+  .cards {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .tabs {
+    gap: 12px;
+  }
+  .confirmCard {
+    padding: 22px 20px 32px;
+  }
+  .confirmFields {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  .confirmFields input {
+    max-width: none;
+    margin-bottom: 8px;
+  }
+}

@@ -1,0 +1,394 @@
+.page {
+  box-sizing: border-box;
+  display: flex;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--bg-right);
+  position: relative;
+
+  border-bottom: 6px solid transparent;
+  border-image: linear-gradient(
+      90deg,
+      var(--yellow-1) 0%,
+      var(--yellow-2) 30%,
+      rgba(224, 142, 0, 0) 100%
+    )
+    1;
+}
+
+.main {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  position: relative;
+  padding: 48px 56px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.watermark {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  transform: translate(-50%, -50%);
+  width: 720px;
+  height: 720px;
+  background-image: url("/protecti-logo.png");
+  background-position: center;
+  background-size: contain;
+  background-repeat: no-repeat;
+  opacity: 0.09;
+  filter: grayscale(0.25);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.header {
+  position: relative;
+  z-index: 1;
+  margin-bottom: 32px;
+}
+
+.eyebrow {
+  margin: 0 0 4px;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--yellow-1);
+}
+
+.title {
+  margin: 0 0 6px;
+  font-size: 40px;
+  font-weight: 800;
+  color: var(--text-main);
+  letter-spacing: -0.4px;
+  line-height: 1.05;
+}
+
+.subtitle {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+/* ---------- Cards de formulário ---------- */
+.cards {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  max-width: 1000px;
+  margin: 0 auto 32px;
+}
+
+.card {
+  border: 1px solid var(--yellow-2);
+  border-radius: 16px;
+  padding: 20px 24px 24px;
+  background: rgba(20, 20, 22, 0.55);
+  display: flex;
+  flex-direction: column;
+}
+
+.cardTitle {
+  margin: 0 0 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--text-main);
+}
+.iconEntrada {
+  color: var(--yellow-1);
+}
+.iconSaida {
+  color: #f26a1b;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 16px;
+  margin-bottom: 16px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.field label {
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-label);
+  margin-bottom: 5px;
+}
+.field input,
+.field select {
+  width: 100%;
+  background: var(--input-bg);
+  border: 1px solid var(--yellow-2);
+  border-radius: 6px;
+  padding: 7px 10px;
+  font-size: 13px;
+  color: var(--text-main);
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.field input::placeholder {
+  color: #6a6a6e;
+}
+.field input[type="datetime-local"] {
+  color-scheme: dark;
+  font-size: 12px;
+}
+.field input:focus,
+.field select:focus {
+  border-color: var(--yellow-1);
+  box-shadow: 0 0 0 3px rgba(242, 169, 12, 0.15);
+}
+.field select {
+  appearance: none;
+  text-overflow: ellipsis;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239a9a9e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 14px;
+  padding-right: 28px;
+  cursor: pointer;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: auto;
+}
+
+.btn {
+  border-radius: 5px;
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--text-main);
+  cursor: pointer;
+  transition: filter 0.15s ease, transform 0.05s ease;
+}
+.btn:hover {
+  filter: brightness(1.12);
+}
+.btn:active {
+  transform: translateY(1px);
+}
+.btnEntrada {
+  background: #9a7d2a;
+  border: 1px solid var(--yellow-2);
+}
+.btnSaida {
+  background: #a3503a;
+  border: 1px solid #e0703f;
+}
+
+.error {
+  font-size: 12px;
+  color: #ff8a80;
+}
+
+/* ---------- Saldo por item ---------- */
+.sectionTitle {
+  position: relative;
+  z-index: 1;
+  max-width: 1000px;
+  margin: 0 auto 10px;
+  padding-left: 18px;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-main);
+}
+
+.tableCard {
+  position: relative;
+  z-index: 1;
+  max-width: 1000px;
+  margin: 0 auto;
+  border: 1px solid var(--yellow-2);
+  border-radius: 16px;
+  overflow: hidden;
+  background: rgba(20, 20, 22, 0.55);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 2.2fr 1fr 1fr 1fr 1.4fr;
+  align-items: center;
+  gap: 12px;
+  padding: 0 24px;
+  text-align: center;
+}
+
+.tableHead {
+  height: 54px;
+  border-bottom: 1px solid rgba(242, 169, 12, 0.6);
+}
+.tableHead span {
+  font-size: 12.5px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-main);
+}
+
+.tableRow {
+  height: 51px;
+  border-bottom: 1px solid rgba(242, 169, 12, 0.6);
+}
+.tableRow:last-child {
+  border-bottom: none;
+}
+
+.nome {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+.compartimento {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--yellow-1);
+}
+.disponivel {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+.minimo {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 102px;
+  padding: 3px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.badgeDisponivel {
+  color: #34d36b;
+  background: rgba(31, 107, 63, 0.55);
+  border-color: #2e8f57;
+}
+.badgeBaixo {
+  color: #2f6bff;
+  background: rgba(30, 64, 175, 0.35);
+  border-color: #2c4fb8;
+}
+.badgeVencido {
+  color: #ff5a5a;
+  background: rgba(150, 30, 30, 0.6);
+  border-color: #a53434;
+}
+.badgeVencer {
+  color: var(--yellow-2);
+  background: rgba(150, 100, 10, 0.55);
+  border-color: #a8740f;
+}
+
+/* ---------- Modal de sucesso ---------- */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.modal {
+  width: min(447px, 100%);
+  padding: 52px 32px 48px;
+  background: #1e1e21;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+}
+
+.checkIcon {
+  width: 236px;
+  height: 236px;
+}
+
+.modalTitle {
+  margin: 32px 0 22px;
+  font-size: 48px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: #ffffff;
+  line-height: 1;
+}
+
+.proceedBtn {
+  width: 240px;
+  height: 41px;
+  border: none;
+  border-radius: 6px;
+  background: #fbc531;
+  color: #1a1a1a;
+  font-family: inherit;
+  font-size: 20px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: filter 0.15s ease, transform 0.05s ease;
+}
+.proceedBtn:hover {
+  filter: brightness(1.06);
+}
+.proceedBtn:active {
+  transform: translateY(1px);
+}
+
+@media (max-width: 1100px) {
+  .cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .page {
+    flex-direction: column;
+    height: auto;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+  .main {
+    overflow: visible;
+    padding: 32px 24px;
+  }
+  .row {
+    grid-template-columns: 1fr;
+    gap: 6px;
+    padding: 14px 20px;
+    height: auto;
+  }
+  .tableHead {
+    display: none;
+  }
+}
