@@ -84,15 +84,73 @@
   color: var(--text-muted);
 }
 .logout {
+  padding: 0 0;
   display: inline-flex;
   align-items: center;
   gap: 6px;
   font-size: 13.5px;
   color: var(--text-muted);
   text-decoration: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font:bold;
 }
 .logout:hover {
   color: var(--text-main);
+}
+
+/* Skeleton loading animation */
+.userCardSkeleton {
+  border: 1px solid var(--yellow-2);
+  border-radius: 10px;
+  padding: 16px;
+  margin-top: 16px;
+}
+
+.skeletonLine {
+  height: 16px;
+  border-radius: 4px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.05) 25%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0.05) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  margin-bottom: 8px;
+}
+
+.skeletonLineShort {
+  width: 60%;
+}
+
+.skeletonLineMedium {
+  width: 80%;
+}
+
+.skeletonButton {
+  height: 36px;
+  width: 100%;
+  border-radius: 8px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.05) 25%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0.05) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 @media (max-width: 900px) {

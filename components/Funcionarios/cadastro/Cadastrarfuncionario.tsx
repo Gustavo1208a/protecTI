@@ -2,7 +2,8 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, AlertCircle, CheckCircle, Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar/Sidebar";
 import styles from "./cadastrar-funcionario.module.css";
 
@@ -31,16 +32,47 @@ export default function CadastrarFuncionario() {
     cargo: "",
     perfil: PERFIS[0],
     status: STATUS_OPTS[0],
+    senha: "",
+    temAcesso: false,
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+  const router = useRouter();
 
-  function update<K extends keyof typeof form>(key: K, value: string) {
+  function update<K extends keyof typeof form>(key: K, value: string | boolean) {
     setForm((f) => ({ ...f, [key]: value }));
+    if (error) setError(null);
   }
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    // TODO: integrar com o endpoint de cadastro de funcionários
-    console.log("cadastrar funcionário", form);
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/funcionarios", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Erro ao cadastrar funcionário");
+      }
+
+      setSuccess(true);
+      setTimeout(() => {
+        router.push("/funcionarios");
+        router.refresh();
+      }, 1500);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro inesperado");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -58,7 +90,21 @@ export default function CadastrarFuncionario() {
         <h1 className={styles.title}>Cadastrar Funcionários</h1>
 
         <div className={styles.formCard}>
+          {success && (
+            <div className={styles.successMessage}>
+              <CheckCircle size={20} strokeWidth={2} />
+              Funcionário cadastrado com sucesso! Redirecionando...
+            </div>
+          )}
+
           <form onSubmit={handleSubmit}>
+            {error && (
+              <div className={styles.errorMessage}>
+                <AlertCircle size={18} strokeWidth={2} />
+                {error}
+              </div>
+            )}
+
             <div className={styles.grid}>
               <div className={styles.field}>
                 <label htmlFor="matricula">Matrícula</label>
@@ -69,6 +115,7 @@ export default function CadastrarFuncionario() {
                   value={form.matricula}
                   onChange={(e) => update("matricula", e.target.value)}
                   required
+                  disabled={loading || success}
                 />
               </div>
               <div className={styles.field}>
@@ -80,6 +127,7 @@ export default function CadastrarFuncionario() {
                   value={form.nome}
                   onChange={(e) => update("nome", e.target.value)}
                   required
+                  disabled={loading || success}
                 />
               </div>
 
@@ -92,8 +140,36 @@ export default function CadastrarFuncionario() {
                   value={form.cpf}
                   onChange={(e) => update("cpf", e.target.value)}
                   required
+                  disabled={loading || success}
                 />
               </div>
+              <div className={styles.field}>
+                <label htmlFor="temAcesso" className={styles.checkboxLabel}>
+                  <input
+                    id="temAcesso"
+                    type="checkbox"
+                    checked={form.temAcesso}
+                    onChange={(e) => update("temAcesso", e.target.checked)}
+                    disabled={loading || success}
+                  />
+                  <span>Tem acesso ao site (pode fazer login)</span>
+                </label>
+              </div>
+              {form.temAcesso && (
+                <div className={styles.field}>
+                  <label htmlFor="senha">Senha</label>
+                  <input
+                    id="senha"
+                    type="password"
+                    placeholder="Mínimo 6 caracteres"
+                    value={form.senha}
+                    onChange={(e) => update("senha", e.target.value)}
+                    required
+                    disabled={loading || success}
+                    minLength={6}
+                  />
+                </div>
+              )}
               <div className={styles.field}>
                 <label htmlFor="telefone">Telefone</label>
                 <input
@@ -103,6 +179,7 @@ export default function CadastrarFuncionario() {
                   value={form.telefone}
                   onChange={(e) => update("telefone", e.target.value)}
                   required
+                  disabled={loading || success}
                 />
               </div>
 
@@ -112,6 +189,7 @@ export default function CadastrarFuncionario() {
                   id="setor"
                   value={form.setor}
                   onChange={(e) => update("setor", e.target.value)}
+                  disabled={loading || success}
                 >
                   {SETORES.map((s) => (
                     <option key={s} value={s}>
@@ -129,6 +207,7 @@ export default function CadastrarFuncionario() {
                   value={form.cargo}
                   onChange={(e) => update("cargo", e.target.value)}
                   required
+                  disabled={loading || success}
                 />
               </div>
 
@@ -138,6 +217,7 @@ export default function CadastrarFuncionario() {
                   id="perfil"
                   value={form.perfil}
                   onChange={(e) => update("perfil", e.target.value)}
+                  disabled={loading || success}
                 >
                   {PERFIS.map((p) => (
                     <option key={p} value={p}>
@@ -152,6 +232,7 @@ export default function CadastrarFuncionario() {
                   id="status"
                   value={form.status}
                   onChange={(e) => update("status", e.target.value)}
+                  disabled={loading || success}
                 >
                   {STATUS_OPTS.map((s) => (
                     <option key={s} value={s}>
@@ -163,12 +244,19 @@ export default function CadastrarFuncionario() {
             </div>
 
             <div className={styles.actions}>
-              <button type="submit" className={styles.submitBtn}>
-                Cadastrar
+              <button type="submit" className={styles.submitBtn} disabled={loading || success}>
+                {loading && <Loader2 size={18} strokeWidth={2} className={styles.spinner} />}
+                {loading ? "Cadastrando..." : "Cadastrar"}
               </button>
-              <Link href="/funcionarios" className={styles.cancelBtn}>
-                Cancelar
-              </Link>
+              {!success && (
+                <Link
+                  href="/funcionarios"
+                  className={`${styles.cancelBtn} ${loading ? styles.disabled : ''}`}
+                  onClick={(e) => loading && e.preventDefault()}
+                >
+                  Cancelar
+                </Link>
+              )}
             </div>
           </form>
         </div>

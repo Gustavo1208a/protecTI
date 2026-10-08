@@ -12,6 +12,8 @@ import {
   FileBarChart2,
   LogOut,
 } from "lucide-react";
+import { useAuth } from "@/components/AuthProvider/AuthProvider";
+import { useRouter } from "next/navigation";
 import styles from "./sidebar.module.css";
 
 const NAV_ITEMS = [
@@ -27,15 +29,44 @@ const NAV_ITEMS = [
 
 type SidebarProps = {
   active?: string;
-  userName?: string;
-  userRole?: string;
 };
 
-export default function Sidebar({
-  active = "Dashboard",
-  userName = "Rafael Lamb",
-  userRole = "Técnico de Segurança",
-}: SidebarProps) {
+export default function Sidebar({ active = "Dashboard" }: SidebarProps) {
+  const { user, logout, loading } = useAuth();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await logout();
+    router.push("/login");
+    router.refresh();
+  };
+
+  // Render skeleton loading state for user card while loading
+  const renderUserCard = () => {
+    if (loading) {
+      return (
+        <div className={styles.userCardSkeleton}>
+          <div className={`${styles.skeletonLine} ${styles.skeletonLineMedium}`} />
+          <div className={`${styles.skeletonLine} ${styles.skeletonLineShort}`} />
+          <div className={styles.skeletonButton} />
+        </div>
+      );
+    }
+
+    return (
+      <div className={styles.userCard}>
+        <p className={styles.userName}>{user?.nome || "Usuário"}</p>
+        <p className={styles.userRole}>{user?.cargo || "Funcionário"}</p>
+        <button onClick={handleLogout} className={styles.logout}>
+          <span className={styles.logoutIcon}>
+            <LogOut size={16} strokeWidth={1.8} />
+          </span>
+          <span>Sair</span>
+        </button>
+      </div>
+    );
+  };
+
   return (
     <aside className={styles.sidebar}>
       <div className={styles.logo}>
@@ -66,14 +97,7 @@ export default function Sidebar({
         })}
       </nav>
 
-      <div className={styles.userCard}>
-        <p className={styles.userName}>{userName}</p>
-        <p className={styles.userRole}>{userRole}</p>
-        <a href="/login" className={styles.logout}>
-          <LogOut size={16} strokeWidth={1.8} />
-          <span>Sair</span>
-        </a>
-      </div>
+      {renderUserCard()}
     </aside>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, FormEvent } from "react";
-import { useRouter } from 'next/navigation'; 
+import { useRouter } from 'next/navigation';
 import Image from "next/image";
 import styles from "./login.module.css";
 
@@ -15,12 +15,35 @@ export default function LoginForm() {
   const [senha, setSenha] = useState("");
   const [matricula2, setMatricula2] = useState("");
   const [email, setEmail] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  function handleLogin(e: FormEvent) {
+  async function handleLogin(e: FormEvent) {
     e.preventDefault();
-    // TODO: integrar com o endpoint de autenticação
-    console.log("login attempt", { matricula });
-    router.push("/dashboard");
+    setError("");
+    setLoading(true);
+
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ matricula, senha }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || 'Erro ao fazer login');
+        return;
+      }
+
+      router.push("/dashboard");
+      router.refresh();
+    } catch {
+      setError('Erro de conexão. Tente novamente.');
+    } finally {
+      setLoading(false);
+    }
   }
 
   function handleRecover(e: FormEvent) {
@@ -65,6 +88,12 @@ export default function LoginForm() {
               </p>
 
               <form onSubmit={handleLogin}>
+                {error && (
+                  <div className={styles.error}>
+                    <span className={styles.errorIcon}>!</span>
+                    <span className={styles.errorText}>{error}</span>
+                  </div>
+                )}
                 <div className={styles.field}>
                   <label htmlFor="matricula">Matrícula</label>
                   <input
@@ -76,6 +105,7 @@ export default function LoginForm() {
                     value={matricula}
                     onChange={(e) => setMatricula(e.target.value)}
                     required
+                    disabled={loading}
                   />
                 </div>
                 <div className={styles.field}>
@@ -89,10 +119,11 @@ export default function LoginForm() {
                     value={senha}
                     onChange={(e) => setSenha(e.target.value)}
                     required
+                    disabled={loading}
                   />
                 </div>
-                <button type="submit" className={styles.btn}>
-                  Entrar
+                <button type="submit" className={styles.btn} disabled={loading}>
+                  {loading ? 'Entrando...' : 'Entrar'}
                 </button>
               </form>
 
