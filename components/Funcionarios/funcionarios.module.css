@@ -210,7 +210,29 @@
     font-size: 14.5px;
     background: var(--bg-left);
   }
-  
+
+  .loadingState {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 48px 24px;
+    color: var(--text-muted);
+    font-size: 15px;
+    background: var(--bg-left);
+  }
+
+  .spinner {
+    animation: spin 1s linear infinite;
+    color: var(--yellow-1);
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
   @media (max-width: 900px) {
     .page {
       flex-direction: column;

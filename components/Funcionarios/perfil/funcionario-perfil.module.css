@@ -269,6 +269,14 @@
     border-color: var(--input-border);
 }
 
+.emptyMovimentacoes {
+    padding: 24px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 14px;
+    background: var(--bg-left);
+}
+
 @media (max-width: 900px) {
     .page {
         flex-direction: column;

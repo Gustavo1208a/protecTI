@@ -1,23 +1,54 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Search, Plus } from "lucide-react";
+import { Search, Plus, Loader2 } from "lucide-react";
 import Sidebar from "@/components/Sidebar/Sidebar";
-import { FUNCIONARIOS } from "@/lib/funcionarios";
 import styles from "./funcionarios.module.css";
+
+type Funcionario = {
+  id: number;
+  nome: string;
+  matricula: string;
+  cpf: string;
+  telefone: string;
+  setor: string;
+  cargo: string | null;
+  status: string;
+  createdAt: string;
+  temAcesso?: boolean;
+};
 
 export default function Funcionarios() {
   const [query, setQuery] = useState("");
+  const [funcionarios, setFuncionarios] = useState<Funcionario[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchFuncionarios() {
+      try {
+        const res = await fetch("/api/funcionarios");
+        const data = await res.json();
+        if (res.ok && data.funcionarios) {
+          setFuncionarios(data.funcionarios);
+        }
+      } catch (error) {
+        console.error("Erro ao buscar funcionários:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchFuncionarios();
+  }, []);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return FUNCIONARIOS;
-    return FUNCIONARIOS.filter(
+    if (!q) return funcionarios;
+    return funcionarios.filter(
       (f) =>
         f.nome.toLowerCase().includes(q) || f.setor.toLowerCase().includes(q)
     );
-  }, [query]);
+  }, [query, funcionarios]);
 
   return (
     <div className={styles.page}>
@@ -48,38 +79,47 @@ export default function Funcionarios() {
         </div>
 
         <div className={styles.tableCard}>
-          <div className={`${styles.row} ${styles.tableHead}`}>
-            <span>Nome</span>
-            <span>Setor</span>
-            <span>Cargo</span>
-            <span>Status</span>
-            <span />
-          </div>
-
-          {filtered.map((f) => (
-            <div className={`${styles.row} ${styles.tableRow}`} key={f.id}>
-              <span className={styles.nome}>{f.nome}</span>
-              <span className={styles.muted}>{f.setor}</span>
-              <span className={styles.muted}>{f.cargo}</span>
-              <span>
-                <span
-                  className={`${styles.badge} ${
-                    f.status === "Ativo" ? styles.badgeAtivo : styles.badgeInativo
-                  }`}
-                >
-                  {f.status}
-                </span>
-              </span>
-              <Link className={styles.verPerfil} href={`/funcionarios/${f.id}`}>
-                Ver Perfil
-              </Link>
+          {loading ? (
+            <div className={styles.loadingState}>
+              <Loader2 size={24} strokeWidth={2} className={styles.spinner} />
+              Carregando funcionários...
             </div>
-          ))}
+          ) : (
+            <>
+              <div className={`${styles.row} ${styles.tableHead}`}>
+                <span>Nome</span>
+                <span>Setor</span>
+                <span>Cargo</span>
+                <span>Status</span>
+                <span />
+              </div>
 
-          {filtered.length === 0 && (
-            <div className={styles.emptyState}>
-              Nenhum funcionário encontrado para &ldquo;{query}&rdquo;.
-            </div>
+              {filtered.map((f) => (
+                <div className={`${styles.row} ${styles.tableRow}`} key={f.id}>
+                  <span className={styles.nome}>{f.nome}</span>
+                  <span className={styles.muted}>{f.setor || "-"}</span>
+                  <span className={styles.muted}>{f.cargo || "-"}</span>
+                  <span>
+                    <span
+                      className={`${styles.badge} ${
+                        f.status === "ativo" ? styles.badgeAtivo : styles.badgeInativo
+                      }`}
+                    >
+                      {f.status === "ativo" ? "Ativo" : "Inativo"}
+                    </span>
+                  </span>
+                  <Link className={styles.verPerfil} href={`/funcionarios/${f.id}`}>
+                    Ver Perfil
+                  </Link>
+                </div>
+              ))}
+
+              {filtered.length === 0 && (
+                <div className={styles.emptyState}>
+                  Nenhum funcionário encontrado para &ldquo;{query}&rdquo;.
+                </div>
+              )}
+            </>
           )}
         </div>
       </main>

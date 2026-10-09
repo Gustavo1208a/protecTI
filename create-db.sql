@@ -2,9 +2,7 @@
 -- protecTI - Script de criação do banco de dados
 -- ============================================
 
-CREATE DATABASE IF NOT EXISTS gestaoepis
-  DEFAULT CHARACTER SET utf8mb4
-  DEFAULT COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE IF NOT EXISTS gestaoepis;
 
 USE gestaoepis;
 
@@ -103,7 +101,7 @@ ON DUPLICATE KEY UPDATE nome = VALUES(nome);
 
 -- Usuário admin (senha: admin123)
 INSERT INTO usuario (id_usuario, nome, senha, permissao, id_cargo, acesso_site) VALUES
-  (1, 'Administrador', '$2b$12$lFVU7gn6AYy4i2FJsdn32egMdqgWCLtWVrG.t8z8rgdkZdqyF.ph.', 2, 2, TRUE)
+  (1, 'Rafael Lamb', '$2b$12$lFVU7gn6AYy4i2FJsdn32egMdqgWCLtWVrG.t8z8rgdkZdqyF.ph.', 2, 2, TRUE)
 ON DUPLICATE KEY UPDATE nome = VALUES(nome);
 
 -- Usuário teste (senha: user123)

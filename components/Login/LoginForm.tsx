@@ -3,12 +3,14 @@
 import { useState, FormEvent } from "react";
 import { useRouter } from 'next/navigation';
 import Image from "next/image";
+import { useAuth } from "@/components/AuthProvider/AuthProvider";
 import styles from "./login.module.css";
 
 type View = "login" | "recover";
 
 export default function LoginForm() {
   const router = useRouter();
+  const { login } = useAuth();
 
   const [view, setView] = useState<View>("login");
   const [matricula, setMatricula] = useState("");
@@ -24,16 +26,10 @@ export default function LoginForm() {
     setLoading(true);
 
     try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ matricula, senha }),
-      });
+      const result = await login(matricula, senha);
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.error || 'Erro ao fazer login');
+      if (!result.success) {
+        setError(result.error || 'Erro ao fazer login');
         return;
       }
 

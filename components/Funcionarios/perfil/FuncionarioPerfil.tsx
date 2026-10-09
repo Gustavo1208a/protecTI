@@ -3,10 +3,33 @@
 import Link from "next/link";
 import { ArrowLeft, Plus } from "lucide-react";
 import Sidebar from "@/components/Sidebar/Sidebar";
-import { Funcionario } from "@/lib/funcionarios";
 import styles from "./funcionario-perfil.module.css";
 
-export default function FuncionarioPerfil({ funcionario }: { funcionario: Funcionario }) {
+type FuncionarioPerfilProps = {
+  id: number;
+  codigo: string;
+  matricula: string;
+  nome: string;
+  cpf: string;
+  telefone: string;
+  setor: string;
+  cargo: string | null;
+  status: string;
+  createdAt: string;
+  epiEmPosse: number;
+  retiradasNoAno: number;
+  devolucoes: number;
+  pendencias: number;
+  movimentacoes: Array<{
+    id: string;
+    epi: string;
+    acao: string;
+    qtd: number;
+    dataHora: string;
+  }>;
+};
+
+export default function FuncionarioPerfil({ funcionario }: { funcionario: FuncionarioPerfilProps }) {
   const {
     codigo,
     matricula,
@@ -39,7 +62,7 @@ export default function FuncionarioPerfil({ funcionario }: { funcionario: Funcio
           <div>
             <p className={styles.eyebrow}>Matrícula {matricula}</p>
             <h1 className={styles.title}>{nome}</h1>
-            <p className={styles.subtitle}>{cargo}</p>
+            <p className={styles.subtitle}>{cargo || "Sem cargo"}</p>
           </div>
           <button className={styles.addBtn} type="button">
             <Plus size={18} strokeWidth={2.2} />
@@ -85,15 +108,21 @@ export default function FuncionarioPerfil({ funcionario }: { funcionario: Funcio
             <span>Data/Hora</span>
           </div>
 
-          {movimentacoes.map((m) => (
-            <div className={`${styles.row} ${styles.tableRow}`} key={m.id}>
-              <span className={styles.mvId}>{m.id}</span>
-              <span className={styles.mvEpi}>{m.epi}</span>
-              <span className={styles.muted}>{m.acao}</span>
-              <span className={styles.muted}>{m.qtd}</span>
-              <span className={styles.muted}>{m.dataHora}</span>
+          {movimentacoes.length > 0 ? (
+            movimentacoes.map((m) => (
+              <div className={`${styles.row} ${styles.tableRow}`} key={m.id}>
+                <span className={styles.mvId}>{m.id}</span>
+                <span className={styles.mvEpi}>{m.epi}</span>
+                <span className={styles.muted}>{m.acao}</span>
+                <span className={styles.muted}>{m.qtd}</span>
+                <span className={styles.muted}>{m.dataHora}</span>
+              </div>
+            ))
+          ) : (
+            <div className={styles.emptyMovimentacoes}>
+              Nenhuma movimentação registrada.
             </div>
-          ))}
+          )}
         </div>
 
         <div className={styles.cadastralWrap}>
@@ -114,20 +143,20 @@ export default function FuncionarioPerfil({ funcionario }: { funcionario: Funcio
             </div>
             <div className={styles.cadastralRow}>
               <span className={styles.cadastralLabel}>Setor</span>
-              <span className={styles.cadastralValue}>{setor.toUpperCase()}</span>
+              <span className={styles.cadastralValue}>{setor?.toUpperCase() || "-"}</span>
             </div>
             <div className={styles.cadastralRow}>
               <span className={styles.cadastralLabel}>Cargo</span>
-              <span className={styles.cadastralValue}>{cargo.toUpperCase()}</span>
+              <span className={styles.cadastralValue}>{cargo?.toUpperCase() || "-"}</span>
             </div>
             <div className={styles.cadastralRow}>
               <span className={styles.cadastralLabel}>Status</span>
               <span
                 className={`${styles.badge} ${
-                  status === "Ativo" ? styles.badgeAtivo : styles.badgeInativo
+                  status === "ativo" ? styles.badgeAtivo : styles.badgeInativo
                 }`}
               >
-                {status}
+                {status === "ativo" ? "Ativo" : "Inativo"}
               </span>
             </div>
           </div>

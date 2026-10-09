@@ -45,6 +45,23 @@ export default function CadastrarFuncionario() {
     if (error) setError(null);
   }
 
+  function resetForm() {
+    setForm({
+      matricula: "",
+      nome: "",
+      cpf: "",
+      telefone: "",
+      setor: SETORES[0],
+      cargo: "",
+      perfil: PERFIS[0],
+      status: STATUS_OPTS[0],
+      senha: "",
+      temAcesso: false,
+    });
+    setSuccess(false);
+    setError(null);
+  }
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setLoading(true);
@@ -64,15 +81,20 @@ export default function CadastrarFuncionario() {
       }
 
       setSuccess(true);
-      setTimeout(() => {
-        router.push("/funcionarios");
-        router.refresh();
-      }, 1500);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro inesperado");
     } finally {
       setLoading(false);
     }
+  }
+
+  function handleRegisterAnother() {
+    resetForm();
+  }
+
+  function handleGoToList() {
+    router.push("/funcionarios");
+    router.refresh();
   }
 
   return (
@@ -93,7 +115,23 @@ export default function CadastrarFuncionario() {
           {success && (
             <div className={styles.successMessage}>
               <CheckCircle size={20} strokeWidth={2} />
-              Funcionário cadastrado com sucesso! Redirecionando...
+              <span>Funcionário cadastrado com sucesso!</span>
+              <div className={styles.successActions}>
+                <button
+                  type="button"
+                  className={styles.successBtn}
+                  onClick={handleRegisterAnother}
+                >
+                  Cadastrar outro
+                </button>
+                <button
+                  type="button"
+                  className={styles.successBtnSecondary}
+                  onClick={handleGoToList}
+                >
+                  Ver lista
+                </button>
+              </div>
             </div>
           )}
 
@@ -143,33 +181,6 @@ export default function CadastrarFuncionario() {
                   disabled={loading || success}
                 />
               </div>
-              <div className={styles.field}>
-                <label htmlFor="temAcesso" className={styles.checkboxLabel}>
-                  <input
-                    id="temAcesso"
-                    type="checkbox"
-                    checked={form.temAcesso}
-                    onChange={(e) => update("temAcesso", e.target.checked)}
-                    disabled={loading || success}
-                  />
-                  <span>Tem acesso ao site (pode fazer login)</span>
-                </label>
-              </div>
-              {form.temAcesso && (
-                <div className={styles.field}>
-                  <label htmlFor="senha">Senha</label>
-                  <input
-                    id="senha"
-                    type="password"
-                    placeholder="Mínimo 6 caracteres"
-                    value={form.senha}
-                    onChange={(e) => update("senha", e.target.value)}
-                    required
-                    disabled={loading || success}
-                    minLength={6}
-                  />
-                </div>
-              )}
               <div className={styles.field}>
                 <label htmlFor="telefone">Telefone</label>
                 <input
@@ -242,6 +253,40 @@ export default function CadastrarFuncionario() {
                 </select>
               </div>
             </div>
+
+            {/* Tem Acesso - Last option with toggle switch */}
+            <div className={styles.field} style={{ gridColumn: '1 / -1', marginTop: '8px' }}>
+              <label className={styles.toggleLabel}>
+                <input
+                  id="temAcesso"
+                  type="checkbox"
+                  checked={form.temAcesso}
+                  onChange={(e) => update("temAcesso", e.target.checked)}
+                  disabled={loading || success}
+                  className={styles.toggleInput}
+                />
+                <span className={styles.toggleTrack}>
+                  <span className={styles.toggleThumb} />
+                </span>
+                <span className={styles.toggleText}>Tem acesso ao site (pode fazer login)</span>
+              </label>
+            </div>
+
+            {form.temAcesso && (
+              <div className={styles.field} style={{ gridColumn: '1 / -1', marginBottom: '16px' }}>
+                <label htmlFor="senha">Senha</label>
+                <input
+                  id="senha"
+                  type="password"
+                  placeholder="Mínimo 6 caracteres"
+                  value={form.senha}
+                  onChange={(e) => update("senha", e.target.value)}
+                  required
+                  disabled={loading || success}
+                  minLength={6}
+                />
+              </div>
+            )}
 
             <div className={styles.actions}>
               <button type="submit" className={styles.submitBtn} disabled={loading || success}>

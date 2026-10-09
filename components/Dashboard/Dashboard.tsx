@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Sidebar from "@/components/Sidebar/Sidebar";
 import styles from "./dashboard.module.css";
 
@@ -9,8 +10,8 @@ type StatCard = {
   color: string;
 };
 
-const STATS: StatCard[] = [
-  { label: "Total de funcionários", value: "316", color: "var(--yellow-1)" },
+const STATS_DEFAULTS: StatCard[] = [
+  { label: "Total de funcionários", value: "—", color: "var(--yellow-1)" },
   { label: "EPIs em estoque", value: "288", color: "var(--text-main)" },
   { label: "Devoluções", value: "80", color: "#4ade80" },
   { label: "Vencidos / A vencer", value: "1/1", color: "#f36a6a" },
@@ -48,6 +49,27 @@ const MAX_SECTOR = Math.max(...SECTORS.map((s) => s.value));
 const MAX_BAR = Math.max(...WEEK.map((d) => d.entregas + d.devolucoes));
 
 export default function Dashboard() {
+  const [stats, setStats] = useState<StatCard[]>(STATS_DEFAULTS);
+
+  useEffect(() => {
+    async function fetchFuncionariosCount() {
+      try {
+        const res = await fetch('/api/funcionarios');
+        const data = await res.json();
+        if (res.ok && data.funcionarios) {
+          setStats(prev => prev.map(stat =>
+            stat.label === "Total de funcionários"
+              ? { ...stat, value: String(data.funcionarios.length) }
+              : stat
+          ));
+        }
+      } catch {
+        // Keep default value on error
+      }
+    }
+    fetchFuncionariosCount();
+  }, []);
+
   return (
     <div className={styles.page}>
       <Sidebar active="Dashboard" />
@@ -58,7 +80,7 @@ export default function Dashboard() {
         <h1 className={styles.title}>Visão Geral</h1>
 
         <section className={styles.statsGrid}>
-          {STATS.map((stat) => (
+          {stats.map((stat) => (
             <div className={styles.statCard} key={stat.label}>
               <p className={styles.statLabel}>{stat.label}</p>
               <p className={styles.statValue} style={{ color: stat.color }}>
