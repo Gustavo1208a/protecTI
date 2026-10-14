@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Search, Plus, Loader2 } from "lucide-react";
+import { Search, Plus } from "lucide-react";
 import Sidebar from "@/components/Sidebar/Sidebar";
 import styles from "./funcionarios.module.css";
 
@@ -80,9 +80,23 @@ export default function Funcionarios() {
 
         <div className={styles.tableCard}>
           {loading ? (
-            <div className={styles.loadingState}>
-              <Loader2 size={24} strokeWidth={2} className={styles.spinner} />
-              Carregando funcionários...
+            <div className={styles.skeletonContainer}>
+              <div className={`${styles.row} ${styles.tableHead}`}>
+                <span className={styles.skeletonHeader} />
+                <span className={styles.skeletonHeader} />
+                <span className={styles.skeletonHeader} />
+                <span className={styles.skeletonHeader} />
+                <span />
+              </div>
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className={`${styles.row} ${styles.skeletonRow}`}>
+                  <span className={styles.skeletonCell} />
+                  <span className={styles.skeletonCell} />
+                  <span className={styles.skeletonCell} />
+                  <span className={styles.skeletonBadge} />
+                  <span />
+                </div>
+              ))}
             </div>
           ) : (
             <>
@@ -116,7 +130,7 @@ export default function Funcionarios() {
 
               {filtered.length === 0 && (
                 <div className={styles.emptyState}>
-                  Nenhum funcionário encontrado para &ldquo;{query}&rdquo;.
+                  Nenhum funcionário encontrado.
                 </div>
               )}
             </>

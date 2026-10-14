@@ -49,6 +49,14 @@ CREATE TABLE IF NOT EXISTS epi (
   ca VARCHAR(50) COMMENT 'Certificado de Aprovação',
   validade_ca DATE,
   quantidade_estoque INT DEFAULT 0,
+  quantidade_minima INT DEFAULT 0,
+  categoria VARCHAR(100),
+  tamanho VARCHAR(20),
+  lote VARCHAR(50),
+  fornecedor VARCHAR(150),
+  data_fabricacao DATE,
+  armario VARCHAR(50),
+  compartimento VARCHAR(50) NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -102,9 +110,4 @@ ON DUPLICATE KEY UPDATE nome = VALUES(nome);
 -- Usuário admin (senha: admin123)
 INSERT INTO usuario (id_usuario, nome, senha, permissao, id_cargo, acesso_site) VALUES
   (1, 'Rafael Lamb', '$2b$12$lFVU7gn6AYy4i2FJsdn32egMdqgWCLtWVrG.t8z8rgdkZdqyF.ph.', 2, 2, TRUE)
-ON DUPLICATE KEY UPDATE nome = VALUES(nome);
-
--- Usuário teste (senha: user123)
-INSERT INTO usuario (id_usuario, nome, senha, permissao, id_cargo, acesso_site) VALUES
-  (2, 'João Silva', '$2b$12$y/khdDnhSwcPdfN.p8XIVuC8lHft/55Wu5kbGQ.mz6q/vPxHWZBWa', 1, 1, TRUE)
 ON DUPLICATE KEY UPDATE nome = VALUES(nome);

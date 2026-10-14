@@ -169,6 +169,15 @@
   transform: none;
 }
 
+/* Warning state (estoque baixo) */
+.cardWarning {
+  border-color: var(--yellow-1);
+}
+.cardWarning:hover {
+  border-color: var(--yellow-1);
+  background: rgba(242, 169, 12, 0.08);
+}
+
 .cardName {
   grid-column: 1;
   grid-row: 1;
@@ -183,6 +192,15 @@
   font-weight: 400;
   color: var(--text-label);
   max-width: 190px;
+}
+
+.cardCategory {
+  grid-column: 1 / -1;
+  grid-row: 3;
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .cardTag {
@@ -229,6 +247,10 @@
 .badgeVencido {
   color: #f0343d;
   border-color: #c0272d;
+}
+.badgeBaixo {
+  color: var(--yellow-1);
+  border-color: var(--yellow-2);
 }
 
 /* ---------- Confirmar entrega ---------- */
@@ -294,11 +316,83 @@
   cursor: pointer;
   transition: filter 0.15s ease, transform 0.05s ease;
 }
-.confirmBtn:hover {
+.confirmBtn:hover:not(:disabled) {
   filter: brightness(1.06);
 }
-.confirmBtn:active {
+.confirmBtn:active:not(:disabled) {
   transform: translateY(1px);
+}
+.confirmBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.errorMessage {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: rgba(220, 53, 69, 0.15);
+  border: 1px solid rgba(220, 53, 69, 0.3);
+  border-radius: 8px;
+  color: #f88;
+  font-size: 13.5px;
+  margin-bottom: 16px;
+}
+
+/* Skeleton loading */
+.skeletonCard {
+  pointer-events: none;
+}
+.skeletonLine {
+  height: 16px;
+  border-radius: 4px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.04) 0%,
+    rgba(255, 255, 255, 0.08) 40%,
+    rgba(255, 255, 255, 0.04) 80%
+  );
+  background-size: 800px 100%;
+  animation: shimmer 1.8s ease-in-out infinite;
+}
+.skeletonLineLong {
+  width: 80%;
+}
+.skeletonBadge {
+  width: 90px;
+  height: 24px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.04) 0%,
+    rgba(255, 255, 255, 0.08) 40%,
+    rgba(255, 255, 255, 0.04) 80%
+  );
+  background-size: 800px 100%;
+  animation: shimmer 1.8s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+.emptyState {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--text-muted);
+  font-size: 14.5px;
 }
 
 @media (max-width: 900px) {

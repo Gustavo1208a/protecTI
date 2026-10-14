@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Loader2, AlertCircle, CheckCircle } from "lucide-react";
 import Sidebar from "@/components/Sidebar/Sidebar";
 import { FUNCIONARIOS, type Funcionario } from "@/lib/funcionarios";
 import styles from "./entrega.module.css";
@@ -24,35 +24,45 @@ const SETOR_ENTREGA: Record<string, string> = {
 };
 
 type EpiEntrega = {
-  id: string;
+  id_epi: number;
   nome: string;
-  disponiveis: number;
-  status: "Disponível" | "Vencido";
-  validade: string; // AAAA-MM-DD
+  quantidade_estoque: number;
+  quantidade_minima: number;
+  validade_ca: string | null;
+  categoria: string | null;
 };
-
-const EPIS_ENTREGA: EpiEntrega[] = [
-  { id: "capacete", nome: "Capacete de Segurança Classe B", disponiveis: 42, status: "Disponível", validade: "2028-03-15" },
-  { id: "luva", nome: "Luva de Vaqueta", disponiveis: 8, status: "Vencido", validade: "2026-05-10" },
-  { id: "oculos", nome: "Óculos de Proteção Incolor", disponiveis: 63, status: "Disponível", validade: "2028-01-20" },
-  { id: "protetor", nome: "Protetor Auricular Plug", disponiveis: 120, status: "Vencido", validade: "2026-04-02" },
-  { id: "mascara", nome: "Máscara PFF2", disponiveis: 25, status: "Disponível", validade: "2027-11-30" },
-  { id: "bota", nome: "Bota de Segurança Bico Composite", disponiveis: 120, status: "Disponível", validade: "2028-06-08" },
-];
-
-// "2028-03-15" -> "15/03/2028" (sem converter fuso horário, para não "voltar" um dia)
-function formatarData(iso: string) {
-  const [ano, mes, dia] = iso.split("-");
-  return `${dia}/${mes}/${ano}`;
-}
 
 export default function Entrega() {
   const router = useRouter();
   const [step, setStep] = useState<Step>("funcionarios");
   const [funcionario, setFuncionario] = useState<Funcionario | null>(null);
   const [epi, setEpi] = useState<EpiEntrega | null>(null);
+  const [epis, setEpis] = useState<EpiEntrega[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const stepIndex = STEPS.findIndex((s) => s.key === step);
+
+  useEffect(() => {
+    async function fetchEpis() {
+      setLoading(true);
+      try {
+        const res = await fetch("/api/epis");
+        const data = await res.json();
+        if (res.ok && data.epis) {
+          setEpis(data.epis);
+        } else {
+          throw new Error(data.error || "Erro ao buscar EPIs");
+        }
+      } catch (err) {
+        setError("Erro ao carregar EPIs");
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchEpis();
+  }, []);
 
   function escolherFuncionario(f: Funcionario) {
     setFuncionario(f);
@@ -61,7 +71,8 @@ export default function Entrega() {
   }
 
   function escolherEpi(e: EpiEntrega) {
-    if (e.status === "Vencido") return;
+    // Não permitir entregar EPI com estoque zero
+    if (e.quantidade_estoque <= 0) return;
     setEpi(e);
     setStep("confirmacao");
   }
@@ -71,9 +82,41 @@ export default function Entrega() {
     else if (step === "epis") setStep("funcionarios");
   }
 
-  function confirmar() {
-    // TODO: integrar com o endpoint de registro de entrega
-    router.push("/devolucao");
+  async function confirmar() {
+    if (!funcionario || !epi) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/entrega", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id_func: funcionario.matricula,
+          id_epi: epi.id_epi,
+          quantidade: 1,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Erro ao registrar entrega");
+      // Recarregar EPIs para atualizar estoque
+      const resEpis = await fetch("/api/epis");
+      const dataEpis = await resEpis.json();
+      if (resEpis.ok && dataEpis.epis) setEpis(dataEpis.epis);
+      setStep("funcionarios");
+      setFuncionario(null);
+      setEpi(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro inesperado");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // "2028-03-15" -> "15/03/2028" (sem converter fuso horário)
+  function formatarData(iso: string | null) {
+    if (!iso) return "-";
+    const [ano, mes, dia] = iso.split("-");
+    return `${dia}/${mes}/${ano}`;
   }
 
   return (
@@ -135,33 +178,63 @@ export default function Entrega() {
 
         {step === "epis" && (
           <div className={styles.cards}>
-            {EPIS_ENTREGA.map((e) => {
-              const vencido = e.status === "Vencido";
-              return (
-                <button
-                  key={e.id}
-                  type="button"
-                  className={`${styles.card} ${vencido ? styles.cardDisabled : ""}`}
-                  onClick={() => escolherEpi(e)}
-                  disabled={vencido}
-                  title={vencido ? "EPI vencido: não pode ser entregue" : undefined}
-                >
-                  <span className={`${styles.cardName} ${styles.cardNameMuted}`}>
-                    {e.nome}
-                  </span>
-                  <span
-                    className={`${styles.badge} ${
-                      vencido ? styles.badgeVencido : styles.badgeDisponivel
-                    }`}
-                  >
-                    {e.status}
-                  </span>
-                  <span className={styles.cardMeta}>
-                    {e.disponiveis} Disponíveis
-                  </span>
-                </button>
-              );
-            })}
+            {loading ? (
+              Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className={`${styles.card} ${styles.skeletonCard}`}>
+                  <div className={`${styles.skeletonLine} ${styles.skeletonLineLong}`} />
+                  <div className={styles.skeletonBadge} />
+                  <div className={styles.skeletonLine} />
+                </div>
+              ))
+            ) : (
+              epis
+                .filter((e) => e.quantidade_estoque > 0)
+                .map((e) => {
+                  const vencido = e.validade_ca && new Date(e.validade_ca) < new Date();
+                  const estoqueBaixo = e.quantidade_estoque <= e.quantidade_minima && e.quantidade_minima > 0;
+                  return (
+                    <button
+                      key={e.id_epi}
+                      type="button"
+                      className={`${styles.card} ${vencido || estoqueBaixo ? styles.cardWarning : ""} ${e.quantidade_estoque <= 0 ? styles.cardDisabled : ""}`}
+                      onClick={() => escolherEpi(e)}
+                      disabled={e.quantidade_estoque <= 0 || vencido}
+                      title={
+                        vencido
+                          ? "EPI vencido: não pode ser entregue"
+                          : estoqueBaixo
+                          ? `Estoque baixo: ${e.quantidade_estoque} unidades`
+                          : undefined
+                      }
+                    >
+                      <span className={`${styles.cardName} ${(vencido || estoqueBaixo) && styles.cardNameMuted}`}>
+                        {e.nome}
+                      </span>
+                      <span
+                        className={`${styles.badge} ${
+                          vencido
+                            ? styles.badgeVencido
+                            : estoqueBaixo
+                            ? styles.badgeBaixo
+                            : styles.badgeDisponivel
+                        }`}
+                      >
+                        {vencido ? "Vencido" : estoqueBaixo ? "Estoque baixo" : "Disponível"}
+                      </span>
+                      <span className={styles.cardMeta}>
+                        {e.quantidade_estoque} Disponíveis {e.quantidade_minima > 0 && `(Mín: ${e.quantidade_minima})`}
+                      </span>
+                      {e.categoria && <span className={styles.cardCategory}>{e.categoria}</span>}
+                    </button>
+                  );
+                })
+            )}
+            {epis.length === 0 && !loading && (
+              <div className={styles.emptyState}>Nenhum EPI cadastrado</div>
+            )}
+            {epis.filter((e) => e.quantidade_estoque > 0).length === 0 && !loading && (
+              <div className={styles.emptyState}>Nenhum EPI disponível em estoque</div>
+            )}
           </div>
         )}
 
@@ -185,12 +258,34 @@ export default function Entrega() {
               <label htmlFor="c-epi">EPI</label>
               <input id="c-epi" readOnly value={epi.nome} />
 
-              <label htmlFor="c-validade">Validade</label>
-              <input id="c-validade" readOnly value={formatarData(epi.validade)} />
+              <label htmlFor="c-validade">Validade do CA</label>
+              <input id="c-validade" readOnly value={formatarData(epi.validade_ca)} />
             </div>
 
-            <button type="button" className={styles.confirmBtn} onClick={confirmar}>
-              Confirmar
+            {error && (
+              <div className={styles.errorMessage}>
+                <AlertCircle size={16} />
+                <span>{error}</span>
+              </div>
+            )}
+
+            <button
+              type="button"
+              className={styles.confirmBtn}
+              onClick={confirmar}
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <Loader2 size={16} className={styles.spinner} />
+                  Confirmando...
+                </>
+              ) : (
+                <>
+                  <CheckCircle size={16} />
+                  Confirmar
+                </>
+              )}
             </button>
           </section>
         )}

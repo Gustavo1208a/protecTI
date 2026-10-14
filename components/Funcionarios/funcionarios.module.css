@@ -211,26 +211,43 @@
     background: var(--bg-left);
   }
 
-  .loadingState {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 16px;
-    padding: 48px 24px;
-    color: var(--text-muted);
-    font-size: 15px;
+  @keyframes pulse {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 1; }
+  }
+
+  .skeletonContainer {
     background: var(--bg-left);
   }
 
-  .spinner {
-    animation: spin 1s linear infinite;
-    color: var(--yellow-1);
+  .skeletonHeader {
+    height: 14px;
+    border-radius: 4px;
+    background: linear-gradient(90deg, rgba(255,255,255,0.06) 25%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.06) 75%);
+    background-size: 200% 100%;
+    animation: pulse 1.5s ease-in-out infinite;
   }
 
-  @keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+  .skeletonRow {
+    background: var(--bg-left);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .skeletonCell {
+    height: 16px;
+    border-radius: 4px;
+    background: linear-gradient(90deg, rgba(255,255,255,0.06) 25%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.06) 75%);
+    background-size: 200% 100%;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+
+  .skeletonBadge {
+    width: 70px;
+    height: 24px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, rgba(255,255,255,0.06) 25%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.06) 75%);
+    background-size: 200% 100%;
+    animation: pulse 1.5s ease-in-out infinite;
   }
 
   @media (max-width: 900px) {

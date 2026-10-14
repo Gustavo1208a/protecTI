@@ -2,7 +2,8 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ArrowLeft, AlertCircle, CheckCircle, Loader2 } from "lucide-react";
 import Sidebar from "@/components/Sidebar/Sidebar";
 import styles from "./cadastrar-epis.module.css";
 
@@ -34,15 +35,68 @@ export default function CadastrarEpi() {
     armario: ARMARIOS[0],
     compartimento: "",
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+  const router = useRouter();
 
   function update<K extends keyof typeof form>(key: K, value: string) {
     setForm((f) => ({ ...f, [key]: value }));
+    if (error) setError(null);
   }
 
-  function handleSubmit(e: FormEvent) {
+  function resetForm() {
+    setForm({
+      nome: "",
+      numeroCa: "",
+      categoria: CATEGORIAS[0],
+      tamanho: "",
+      quantidadeInicial: "",
+      quantidadeMinima: "",
+      lote: "",
+      fornecedor: FORNECEDORES[0],
+      dataFabricacao: "",
+      dataValidade: "",
+      armario: ARMARIOS[0],
+      compartimento: "",
+    });
+    setSuccess(false);
+    setError(null);
+  }
+
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    // TODO: integrar com o endpoint de cadastro de EPIs
-    console.log("cadastrar EPI", form);
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/epis", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Erro ao cadastrar EPI");
+      }
+
+      setSuccess(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro inesperado");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function handleRegisterAnother() {
+    resetForm();
+  }
+
+  function handleGoToList() {
+    router.push("/epis");
+    router.refresh();
   }
 
   return (
@@ -60,7 +114,37 @@ export default function CadastrarEpi() {
         <h1 className={styles.title}>Cadastrar EPI</h1>
 
         <div className={styles.formCard}>
+          {success && (
+            <div className={styles.successMessage}>
+              <CheckCircle size={20} strokeWidth={2} />
+              <span>EPI cadastrado com sucesso!</span>
+              <div className={styles.successActions}>
+                <button
+                  type="button"
+                  className={styles.successBtn}
+                  onClick={handleRegisterAnother}
+                >
+                  Cadastrar outro
+                </button>
+                <button
+                  type="button"
+                  className={styles.successBtnSecondary}
+                  onClick={handleGoToList}
+                >
+                  Ver lista
+                </button>
+              </div>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit}>
+            {error && (
+              <div className={styles.errorMessage}>
+                <AlertCircle size={18} strokeWidth={2} />
+                {error}
+              </div>
+            )}
+
             <div className={styles.grid}>
               <div className={styles.field}>
                 <label htmlFor="nome">Nome do EPI</label>
@@ -71,6 +155,7 @@ export default function CadastrarEpi() {
                   value={form.nome}
                   onChange={(e) => update("nome", e.target.value)}
                   required
+                  disabled={loading || success}
                 />
               </div>
               <div className={styles.field}>
@@ -82,6 +167,7 @@ export default function CadastrarEpi() {
                   value={form.numeroCa}
                   onChange={(e) => update("numeroCa", e.target.value)}
                   required
+                  disabled={loading || success}
                 />
               </div>
 
@@ -91,6 +177,7 @@ export default function CadastrarEpi() {
                   id="categoria"
                   value={form.categoria}
                   onChange={(e) => update("categoria", e.target.value)}
+                  disabled={loading || success}
                 >
                   {CATEGORIAS.map((c) => (
                     <option key={c} value={c}>
@@ -107,6 +194,7 @@ export default function CadastrarEpi() {
                   placeholder="Único, P, M, G, 42..."
                   value={form.tamanho}
                   onChange={(e) => update("tamanho", e.target.value)}
+                  disabled={loading || success}
                 />
               </div>
 
@@ -120,6 +208,7 @@ export default function CadastrarEpi() {
                   value={form.quantidadeInicial}
                   onChange={(e) => update("quantidadeInicial", e.target.value)}
                   required
+                  disabled={loading || success}
                 />
               </div>
               <div className={styles.field}>
@@ -132,6 +221,7 @@ export default function CadastrarEpi() {
                   value={form.quantidadeMinima}
                   onChange={(e) => update("quantidadeMinima", e.target.value)}
                   required
+                  disabled={loading || success}
                 />
               </div>
 
@@ -143,6 +233,7 @@ export default function CadastrarEpi() {
                   placeholder="LT-0000"
                   value={form.lote}
                   onChange={(e) => update("lote", e.target.value)}
+                  disabled={loading || success}
                 />
               </div>
               <div className={styles.field}>
@@ -151,6 +242,7 @@ export default function CadastrarEpi() {
                   id="fornecedor"
                   value={form.fornecedor}
                   onChange={(e) => update("fornecedor", e.target.value)}
+                  disabled={loading || success}
                 >
                   {FORNECEDORES.map((f) => (
                     <option key={f} value={f}>
@@ -167,6 +259,7 @@ export default function CadastrarEpi() {
                   type="date"
                   value={form.dataFabricacao}
                   onChange={(e) => update("dataFabricacao", e.target.value)}
+                  disabled={loading || success}
                 />
               </div>
               <div className={styles.field}>
@@ -176,6 +269,7 @@ export default function CadastrarEpi() {
                   type="date"
                   value={form.dataValidade}
                   onChange={(e) => update("dataValidade", e.target.value)}
+                  disabled={loading || success}
                 />
               </div>
 
@@ -185,6 +279,7 @@ export default function CadastrarEpi() {
                   id="armario"
                   value={form.armario}
                   onChange={(e) => update("armario", e.target.value)}
+                  disabled={loading || success}
                 >
                   {ARMARIOS.map((a) => (
                     <option key={a} value={a}>
@@ -202,17 +297,25 @@ export default function CadastrarEpi() {
                   value={form.compartimento}
                   onChange={(e) => update("compartimento", e.target.value)}
                   required
+                  disabled={loading || success}
                 />
               </div>
             </div>
 
             <div className={styles.actions}>
-              <button type="submit" className={styles.submitBtn}>
-                Salvar EPI
+              <button type="submit" className={styles.submitBtn} disabled={loading || success}>
+                {loading && <Loader2 size={18} strokeWidth={2} className={styles.spinner} />}
+                {loading ? "Cadastrando..." : "Salvar EPI"}
               </button>
-              <Link href="/epis" className={styles.cancelBtn}>
-                Cancelar
-              </Link>
+              {!success && (
+                <Link
+                  href="/epis"
+                  className={`${styles.cancelBtn} ${loading ? styles.disabled : ''}`}
+                  onClick={(e) => loading && e.preventDefault()}
+                >
+                  Cancelar
+                </Link>
+              )}
             </div>
           </form>
         </div>

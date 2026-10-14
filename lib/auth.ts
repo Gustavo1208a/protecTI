@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs';
 const JWT_SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET || 'your-super-secret-key-change-in-production'
 );
-const JWT_EXPIRY = '7d';
+const JWT_EXPIRY = '1d';
 
 export interface TokenPayload {
   id: number;
