@@ -45,9 +45,6 @@ export default function Alertas() {
           <div>
             <p className={styles.eyebrow}>Segurança do Trabalho</p>
             <h1 className={styles.title}>Alertas</h1>
-            <p className={styles.subtitle}>
-              RF17 a RF19 · Validade, estoque mínimo e bloqueios automáticos de entrega.
-            </p>
           </div>
           <button
             type="button"
