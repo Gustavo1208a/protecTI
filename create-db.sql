@@ -1,113 +1,96 @@
--- ============================================
--- protecTI - Script de criação do banco de dados
--- ============================================
+DROP DATABASE IF EXISTS gestaoepis;
 
-CREATE DATABASE IF NOT EXISTS gestaoepis;
+CREATE DATABASE gestaoepis
+  CHARACTER SET utf8mb4
+  COLLATE utf8mb4_unicode_ci;
 
 USE gestaoepis;
 
--- ============================================
--- Tabelas base (cargos, funcionários, usuários)
--- ============================================
+CREATE TABLE setor (
+  id_setor  INT AUTO_INCREMENT PRIMARY KEY,
+  nome      VARCHAR(100) NOT NULL,
+  UNIQUE KEY uq_setor_nome (nome)
+) ENGINE=InnoDB;
 
-CREATE TABLE IF NOT EXISTS cargo (
-  id_cargo INT AUTO_INCREMENT PRIMARY KEY,
-  nome VARCHAR(100) NOT NULL
-);
+CREATE TABLE cargo (
+  id_cargo  INT AUTO_INCREMENT PRIMARY KEY,
+  nome      VARCHAR(100) NOT NULL,
+  UNIQUE KEY uq_cargo_nome (nome)
+) ENGINE=InnoDB;
 
-CREATE TABLE IF NOT EXISTS funcionario (
-  id_func INT AUTO_INCREMENT PRIMARY KEY,
-  nome VARCHAR(150) NOT NULL,
-  matricula VARCHAR(50) UNIQUE NOT NULL,
-  cpf VARCHAR(14) UNIQUE,
-  telefone VARCHAR(15),
-  setor VARCHAR(100),
-  funcao VARCHAR(100),
-  data_admissao DATE,
-  status ENUM('ativo', 'inativo') DEFAULT 'ativo',
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+CREATE TABLE categoria_epi (
+  id_categoria  INT AUTO_INCREMENT PRIMARY KEY,
+  nome          VARCHAR(100) NOT NULL,
+  UNIQUE KEY uq_categoria_nome (nome)
+) ENGINE=InnoDB;
 
-CREATE TABLE IF NOT EXISTS usuario (
-  id_usuario INT PRIMARY KEY,
-  nome VARCHAR(150) NOT NULL,
-  senha VARCHAR(255) NOT NULL,
-  permissao TINYINT NOT NULL DEFAULT 1 COMMENT '1=funcionario, 2=tecnico, 3=admin',
-  id_cargo INT,
-  acesso_site BOOLEAN DEFAULT TRUE COMMENT 'Se o usuário pode acessar o site',
-  FOREIGN KEY (id_cargo) REFERENCES cargo(id_cargo)
-);
+CREATE TABLE fornecedor (
+  id_fornecedor  INT AUTO_INCREMENT PRIMARY KEY,
+  nome           VARCHAR(150) NOT NULL,
+  cnpj           VARCHAR(18)  NULL,
+  telefone       VARCHAR(20)  NULL,
+  UNIQUE KEY uq_fornecedor_nome (nome),
+  UNIQUE KEY uq_fornecedor_cnpj (cnpj)
+) ENGINE=InnoDB;
 
--- ============================================
--- Tabelas de EPIs
--- ============================================
+CREATE TABLE armario (
+  id_armario  INT AUTO_INCREMENT PRIMARY KEY,
+  nome        VARCHAR(50) NOT NULL,
+  UNIQUE KEY uq_armario_nome (nome)
+) ENGINE=InnoDB;
 
-CREATE TABLE IF NOT EXISTS epi (
-  id_epi INT AUTO_INCREMENT PRIMARY KEY,
-  nome VARCHAR(150) NOT NULL,
-  descricao TEXT,
-  ca VARCHAR(50) COMMENT 'Certificado de Aprovação',
-  validade_ca DATE,
-  quantidade_estoque INT DEFAULT 0,
-  quantidade_minima INT DEFAULT 0,
-  categoria VARCHAR(100),
-  tamanho VARCHAR(20),
-  lote VARCHAR(50),
-  fornecedor VARCHAR(150),
-  data_fabricacao DATE,
-  armario VARCHAR(50),
-  compartimento VARCHAR(50) NOT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+CREATE TABLE tipo_alerta (
+  codigo      VARCHAR(30) PRIMARY KEY,
+  descricao   VARCHAR(100) NOT NULL,
+  prioridade  ENUM('Alta','Média','Baixa') NOT NULL
+) ENGINE=InnoDB;
 
--- ============================================
--- Tabelas de movimentação
--- ============================================
+CREATE TABLE funcionario (
+  id_func        INT AUTO_INCREMENT PRIMARY KEY,
+  matricula      VARCHAR(20)  NOT NULL,
+  nome           VARCHAR(150) NOT NULL,
+  cpf            VARCHAR(14)  NOT NULL,
+  telefone       VARCHAR(20)  NULL,
+  setor          VARCHAR(100) NULL,
+  funcao         VARCHAR(100) NULL,
+  data_admissao  DATE         NULL,
+  status         ENUM('ativo','inativo') NOT NULL DEFAULT 'ativo',
+  created_at     TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_func_matricula (matricula),
+  UNIQUE KEY uq_func_cpf (cpf),
+  KEY idx_func_setor (setor),
+  CONSTRAINT fk_func_setor FOREIGN KEY (setor) REFERENCES setor (nome)
+    ON UPDATE CASCADE ON DELETE SET NULL
+) ENGINE=InnoDB;
 
-CREATE TABLE IF NOT EXISTS entrega_epi (
-  id_entrega INT AUTO_INCREMENT PRIMARY KEY,
-  id_func INT NOT NULL,
-  id_epi INT NOT NULL,
-  quantidade INT NOT NULL DEFAULT 1,
-  data_entrega DATE NOT NULL,
-  observacao TEXT,
-  FOREIGN KEY (id_func) REFERENCES funcionario(id_func),
-  FOREIGN KEY (id_epi) REFERENCES epi(id_epi)
-);
+CREATE TABLE usuario (
+  id_usuario   INT PRIMARY KEY,
+  id_func      INT NULL,
+  nome         VARCHAR(150) NOT NULL,
+  senha        VARCHAR(255) NOT NULL,
+  permissao    TINYINT NOT NULL DEFAULT 1,
+  id_cargo     INT NULL,
+  acesso_site  BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_usuario_func (id_func),
+  CONSTRAINT ck_usuario_permissao CHECK (permissao BETWEEN 1 AND 3),
+  CONSTRAINT fk_usuario_func  FOREIGN KEY (id_func)  REFERENCES funcionario (id_func)
+    ON UPDATE CASCADE ON DELETE CASCADE,
+  CONSTRAINT fk_usuario_cargo FOREIGN KEY (id_cargo) REFERENCES cargo (id_cargo)
+    ON UPDATE CASCADE ON DELETE SET NULL
+) ENGINE=InnoDB;
 
-CREATE TABLE IF NOT EXISTS devolucao_epi (
-  id_devolucao INT AUTO_INCREMENT PRIMARY KEY,
-  id_entrega INT NOT NULL,
-  data_devolucao DATE NOT NULL,
-  estado ENUM('bom', 'danificado', 'perdido') DEFAULT 'bom',
-  observacao TEXT,
-  FOREIGN KEY (id_entrega) REFERENCES entrega_epi(id_entrega)
-);
-
--- ============================================
--- Tabelas de alertas
--- ============================================
-
-CREATE TABLE IF NOT EXISTS alertas (
-  id_alerta INT AUTO_INCREMENT PRIMARY KEY,
-  tipo ENUM('vencimento_ca', 'estoque_baixo', 'devolucao_pendente') NOT NULL,
-  mensagem TEXT NOT NULL,
-  lido BOOLEAN DEFAULT FALSE,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- ============================================
--- Dados iniciais
--- ============================================
-
--- Cargos
-INSERT INTO cargo (id_cargo, nome) VALUES
-  (1, 'Técnico de Segurança'),
-  (2, 'Administrador'),
-  (3, 'Funcionário')
-ON DUPLICATE KEY UPDATE nome = VALUES(nome);
-
--- Usuário admin (senha: admin123)
-INSERT INTO usuario (id_usuario, nome, senha, permissao, id_cargo, acesso_site) VALUES
-  (1, 'Rafael Lamb', '$2b$12$lFVU7gn6AYy4i2FJsdn32egMdqgWCLtWVrG.t8z8rgdkZdqyF.ph.', 2, 2, TRUE)
-ON DUPLICATE KEY UPDATE nome = VALUES(nome);
+CREATE TABLE epi (
+  id_epi              INT AUTO_INCREMENT PRIMARY KEY,
+  nome                VARCHAR(150) NOT NULL,
+  descricao           TEXT NULL,
+  ca                  VARCHAR(50) NOT NULL,
+  validade_ca         DATE NULL,
+  quantidade_estoque  INT NOT NULL DEFAULT 0,
+  quantidade_minima   INT NOT NULL DEFAULT 0,
+  categoria           VARCHAR(100) NULL,
+  tamanho             VARCHAR(20)  NULL,
+  lote                VARCHAR(50)  NULL,
+  fornecedor          VARCHAR(150) NULL,
+  data_fabricacao     DATE NULL,
+  armario             VARCHAR(50)  NULL,

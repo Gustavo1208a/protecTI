@@ -122,6 +122,14 @@ export async function DELETE(
       { status: 200 }
     );
   } catch (error) {
+    // EPI que já tem entrega/entrada/saída registrada não pode ser apagado
+    // (o histórico precisa continuar existindo).
+    if ((error as any)?.code === 'ER_ROW_IS_REFERENCED_2') {
+      return NextResponse.json(
+        { error: 'Este EPI possui movimentações registradas e não pode ser excluído' },
+        { status: 409 }
+      );
+    }
     console.error('Erro ao excluir EPI:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },

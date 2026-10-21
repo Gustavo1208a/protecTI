@@ -1,3 +1,4 @@
+
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db';
 
@@ -21,26 +22,21 @@ export async function POST(request: NextRequest) {
     try {
       await conn.beginTransaction();
 
-      // Resolve funcionario ID (accept either numeric id_func or matricula string)
-      let funcionarioId: number;
-      if (typeof id_func === 'number' || /^\d+$/.test(String(id_func))) {
-        funcionarioId = parseInt(String(id_func));
-      } else {
-        // Assume it's a matricula
-        const [funcRows] = await conn.execute(
-          'SELECT id_func FROM funcionario WHERE matricula = ?',
-          [id_func]
+      // A tela envia a MATRÍCULA (ex.: "2024001"). Matrícula é numérica, então
+      // ela precisa ser procurada primeiro; só se não existir tentamos como id_func.
+      const [funcRows] = await conn.execute(
+        'SELECT id_func FROM funcionario WHERE matricula = ? OR id_func = ? ORDER BY (matricula = ?) DESC LIMIT 1',
+        [String(id_func), /^\d+$/.test(String(id_func)) ? Number(id_func) : 0, String(id_func)]
+      );
+      const funcs = funcRows as any[];
+      if (funcs.length === 0) {
+        await conn.rollback();
+        return NextResponse.json(
+          { error: 'Funcionário não encontrado' },
+          { status: 404 }
         );
-        const funcs = funcRows as any[];
-        if (funcs.length === 0) {
-          await conn.rollback();
-          return NextResponse.json(
-            { error: 'Funcionário não encontrado' },
-            { status: 404 }
-          );
-        }
-        funcionarioId = funcs[0].id_func;
       }
+      const funcionarioId: number = funcs[0].id_func;
 
       // Check if EPI exists and has stock
       const [epiRows] = await conn.execute(
@@ -68,35 +64,17 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Create delivery record
+      // Create delivery record.
+      // A baixa no estoque e o alerta de estoque baixo são feitos pelos gatilhos
+      // do banco (trg_entrega_baixa_estoque e trg_epi_alertas_update). O banco
+      // também recusa EPI vencido e funcionário inativo (erro SQLSTATE 45000).
       const [deliveryResult] = await conn.execute(
         `INSERT INTO entrega_epi (id_func, id_epi, quantidade, data_entrega, observacao)
-         VALUES (?, ?, ?, CURDATE(), ?)`,
+         VALUES (?, ?, ?, NOW(), ?)`,
         [funcionarioId, id_epi, qtdEntregar, observacao]
       );
 
       const deliveryId = (deliveryResult as any).insertId;
-
-      // Update stock
-      await conn.execute(
-        'UPDATE epi SET quantidade_estoque = quantidade_estoque - ? WHERE id_epi = ?',
-        [qtdEntregar, id_epi]
-      );
-
-      // Check if stock is now at or below minimum and create alert if needed
-      const [updatedEpiRows] = await conn.execute(
-        'SELECT quantidade_estoque, quantidade_minima, nome FROM epi WHERE id_epi = ?',
-        [id_epi]
-      );
-
-      const updatedEpi = (updatedEpiRows as any[])[0];
-      if (updatedEpi.quantidade_estoque <= updatedEpi.quantidade_minima && updatedEpi.quantidade_minima > 0) {
-        await conn.execute(
-          `INSERT INTO alertas (tipo, mensagem)
-           VALUES ('estoque_baixo', ?)`,
-          [`Estoque baixo para ${updatedEpi.nome}: ${updatedEpi.quantidade_estoque} unidades (mínimo: ${updatedEpi.quantidade_minima})`]
-        );
-      }
 
       await conn.commit();
 
@@ -111,6 +89,14 @@ export async function POST(request: NextRequest) {
       conn.release();
     }
   } catch (error) {
+    // Regras de negócio do banco (EPI vencido, funcionário inativo...) chegam
+    // como SQLSTATE 45000 com a mensagem pronta para mostrar ao usuário.
+    if ((error as any)?.sqlState === '45000') {
+      return NextResponse.json(
+        { error: (error as any).sqlMessage || 'Entrega não permitida' },
+        { status: 400 }
+      );
+    }
     console.error('Erro ao registrar entrega:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
