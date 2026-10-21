@@ -16,8 +16,6 @@ const CATEGORIAS = [
   "Proteção dos pés",
 ];
 
-const FORNECEDORES = ["SafetyMax Ltda", "ProtegeMais EPI", "Vida Segura Equipamentos"];
-
 const ARMARIOS = ["Armário 01", "Armário 02", "Armário 03"];
 
 export default function CadastrarEpi() {
@@ -29,7 +27,6 @@ export default function CadastrarEpi() {
     quantidadeInicial: "",
     quantidadeMinima: "",
     lote: "",
-    fornecedor: FORNECEDORES[0],
     dataFabricacao: "",
     dataValidade: "",
     armario: ARMARIOS[0],
@@ -54,7 +51,6 @@ export default function CadastrarEpi() {
       quantidadeInicial: "",
       quantidadeMinima: "",
       lote: "",
-      fornecedor: FORNECEDORES[0],
       dataFabricacao: "",
       dataValidade: "",
       armario: ARMARIOS[0],
@@ -236,22 +232,7 @@ export default function CadastrarEpi() {
                   disabled={loading || success}
                 />
               </div>
-              <div className={styles.field}>
-                <label htmlFor="fornecedor">Fornecedor</label>
-                <select
-                  id="fornecedor"
-                  value={form.fornecedor}
-                  onChange={(e) => update("fornecedor", e.target.value)}
-                  disabled={loading || success}
-                >
-                  {FORNECEDORES.map((f) => (
-                    <option key={f} value={f}>
-                      {f}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
+            
               <div className={styles.field}>
                 <label htmlFor="dataFabricacao">Data de fabricação</label>
                 <input

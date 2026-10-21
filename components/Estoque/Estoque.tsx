@@ -1,9 +1,8 @@
 "use client";
 
 import { FormEvent, useEffect, useRef, useState } from "react";
-import { ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
+import { ArrowDownToLine, ArrowUpFromLine, Loader2 } from "lucide-react";
 import Sidebar from "@/components/Sidebar/Sidebar";
-import { EPIS } from "@/lib/epis";
 import styles from "./estoque.module.css";
 
 type StockStatus = "Disponível" | "Estoque baixo" | "Vencido" | "Vencer";
@@ -17,15 +16,12 @@ type StockRow = {
   status: StockStatus;
 };
 
-const INITIAL_STOCK: StockRow[] = [
-  { id: "1", epi: EPIS[0].nome, compartimento: "A1", disponivel: 42, minimo: 15, status: "Disponível" },
-  { id: "2", epi: EPIS[1].nome, compartimento: "A2", disponivel: 63, minimo: 20, status: "Estoque baixo" },
-  { id: "3", epi: EPIS[4].nome, compartimento: "B1", disponivel: 4, minimo: 6, status: "Vencido" },
-  { id: "4", epi: EPIS[5].nome, compartimento: "B2", disponivel: 120, minimo: 40, status: "Vencer" },
-];
+type EpiOption = {
+  id: string;
+  nome: string;
+  compartimento: string;
+};
 
-const EPI_OPTIONS = EPIS.map((e) => e.nome);
-const FORNECEDORES = ["SafetyMax Ltda", "ProtegeMais EPI", "Vida Segura Equipamentos"];
 const ARMARIOS = ["Armário 01", "Armário 02", "Armário 03"];
 const COMPARTIMENTOS = ["A1", "A2", "B1", "B2"];
 const MOTIVOS = ["Abastecimento", "Entrega", "Descarte", "Perda"];
@@ -38,8 +34,7 @@ const STATUS_CLASS: Record<StockStatus, string> = {
 };
 
 const EMPTY_ENTRADA = {
-  epi: EPI_OPTIONS[0],
-  fornecedor: FORNECEDORES[0],
+  id_epi: "",
   lote: "",
   quantidade: "",
   dataEntrada: "",
@@ -47,7 +42,7 @@ const EMPTY_ENTRADA = {
 };
 
 const EMPTY_SAIDA = {
-  epi: EPI_OPTIONS[0],
+  id_epi: "",
   armario: ARMARIOS[0],
   compartimento: COMPARTIMENTOS[0],
   quantidade: "",
@@ -55,37 +50,59 @@ const EMPTY_SAIDA = {
   motivo: MOTIVOS[0],
 };
 
-
-function mascaraDataHora(valor: string) {
-  const d = valor.replace(/\D/g, "").slice(0, 12);
-  let out = d.slice(0, 2);
-  if (d.length > 2) out += "/" + d.slice(2, 4);
-  if (d.length > 4) out += "/" + d.slice(4, 8);
-  if (d.length > 8) out += " " + d.slice(8, 10);
-  if (d.length > 10) out += ":" + d.slice(10, 12);
-  return out;
-}
-
-function lerDataHora(valor: string): Date | null {
-  const m = valor.match(/^(\d{2})\/(\d{2})\/(\d{4})(?: (\d{2}):(\d{2}))?$/);
-  if (!m) return null;
-  const [dia, mes, ano, hora, min] = [m[1], m[2], m[3], m[4] ?? "0", m[5] ?? "0"].map(Number);
-  const data = new Date(ano, mes - 1, dia, hora, min);
-  return data.getFullYear() === ano && data.getMonth() === mes - 1 && data.getDate() === dia && hora < 24 && min < 60
-    ? data
-    : null;
-}
-
 export default function Estoque() {
-  const [stock, setStock] = useState<StockRow[]>(INITIAL_STOCK);
+  const [stock, setStock] = useState<StockRow[]>([]);
+  const [epis, setEpis] = useState<EpiOption[]>([]);
   const [entrada, setEntrada] = useState(EMPTY_ENTRADA);
   const [saida, setSaida] = useState(EMPTY_SAIDA);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const proceedRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    fetchStock();
+    fetchEpis();
+  }, []);
 
   useEffect(() => {
     if (showSuccess) proceedRef.current?.focus();
   }, [showSuccess]);
+
+  async function fetchStock() {
+    try {
+      const res = await fetch('/api/estoque');
+      if (res.ok) {
+        const data = await res.json();
+        setStock(data.stock || []);
+      }
+    } catch (error) {
+      console.error('Erro ao buscar estoque:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function fetchEpis() {
+    try {
+      const res = await fetch('/api/epis');
+      if (res.ok) {
+        const data = await res.json();
+        const epiOptions: EpiOption[] = (data.epis || []).map((epi: any) => ({
+          id: String(epi.id_epi),
+          nome: epi.nome,
+          compartimento: epi.compartimento || 'N/A',
+        }));
+        setEpis(epiOptions);
+        if (epiOptions.length > 0) {
+          setEntrada(prev => ({ ...prev, id_epi: epiOptions[0].id }));
+          setSaida(prev => ({ ...prev, id_epi: epiOptions[0].id }));
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao buscar EPIs:', error);
+    }
+  }
 
   function updateEntrada<K extends keyof typeof entrada>(key: K, value: string) {
     setEntrada((f) => ({ ...f, [key]: value }));
@@ -94,49 +111,104 @@ export default function Estoque() {
     setSaida((f) => ({ ...f, [key]: value }));
   }
 
-  function handleEntrada(e: FormEvent) {
-    e.preventDefault();
-    const qtd = Math.max(0, Number(entrada.quantidade) || 0);
-    // TODO: integrar com o endpoint de entrada de lotes
-    setStock((rows) => {
-      const idx = rows.findIndex((r) => r.epi === entrada.epi);
-      if (idx === -1 || qtd === 0) return rows;
-      const expired =
-        entrada.validade !== "" && new Date(entrada.validade).getTime() < Date.now();
-      return rows.map((r, i) => {
-        if (i !== idx) return r;
-        const disponivel = r.disponivel + qtd;
-        let status = r.status;
-        if (expired) status = "Vencido";
-        else if (status === "Estoque baixo" && disponivel > r.minimo) status = "Disponível";
-        return { ...r, disponivel, status };
-      });
-    });
-    setEntrada(EMPTY_ENTRADA);
-    setShowSuccess(true);
+  function formatDateForAPI(dateStr: string, withTime = false): string {
+    if (!dateStr) return new Date().toISOString().slice(0, 19).replace('T', ' ');
+    if (withTime) {
+      // datetime-local format: yyyy-mm-ddThh:mm
+      return dateStr.replace('T', ' ') + ':00';
+    }
+    // date format: yyyy-mm-dd
+    return dateStr;
   }
 
-  function handleSaida(e: FormEvent) {
+  async function handleEntrada(e: FormEvent) {
     e.preventDefault();
-    const qtd = Math.max(0, Number(saida.quantidade) || 0);
-    const target =
-      stock.find((r) => r.epi === saida.epi && r.compartimento === saida.compartimento) ??
-      stock.find((r) => r.epi === saida.epi);
-    // TODO: integrar com o endpoint de saída / abastecimento
-    if (target && qtd > 0) {
-      setStock((rows) =>
-        rows.map((r) => {
-          if (r.id !== target.id) return r;
-          const disponivel = Math.max(0, r.disponivel - qtd);
-          const status: StockStatus =
-            disponivel <= r.minimo && r.status === "Disponível" ? "Estoque baixo" : r.status;
-          return { ...r, disponivel, status };
-        })
-      );
+    setSubmitting(true);
+
+    const qtd = Math.max(0, Number(entrada.quantidade) || 0);
+    if (!entrada.id_epi || qtd === 0 || !entrada.dataEntrada) {
+      setSubmitting(false);
+      return;
     }
-    setSaida(EMPTY_SAIDA);
-    setShowSuccess(true);
+
+    try {
+      const res = await fetch('/api/estoque/entrada', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id_epi: entrada.id_epi,
+          lote: entrada.lote,
+          quantidade: qtd,
+          data_entrada: formatDateForAPI(entrada.dataEntrada, true),
+          data_validade: entrada.validade || null,
+        }),
+      });
+
+      if (res.ok) {
+        setEntrada(EMPTY_ENTRADA);
+        if (epis.length > 0) {
+          setEntrada(prev => ({ ...prev, id_epi: epis[0].id }));
+        }
+        setShowSuccess(true);
+        fetchStock();
+      } else {
+        const error = await res.json();
+        alert(error.error || 'Erro ao registrar entrada');
+      }
+    } catch (error) {
+      console.error('Erro ao registrar entrada:', error);
+      alert('Erro ao registrar entrada');
+    } finally {
+      setSubmitting(false);
+    }
   }
+
+  async function handleSaida(e: FormEvent) {
+    e.preventDefault();
+    setSubmitting(true);
+
+    const qtd = Math.max(0, Number(saida.quantidade) || 0);
+    if (!saida.id_epi || qtd === 0 || !saida.dataHora) {
+      setSubmitting(false);
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/estoque/saida', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id_epi: saida.id_epi,
+          armario: saida.armario,
+          compartimento: saida.compartimento,
+          quantidade: qtd,
+          data_saida: formatDateForAPI(saida.dataHora, true),
+          motivo: saida.motivo,
+        }),
+      });
+
+      if (res.ok) {
+        setSaida(EMPTY_SAIDA);
+        if (epis.length > 0) {
+          setSaida(prev => ({ ...prev, id_epi: epis[0].id, armario: ARMARIOS[0], compartimento: COMPARTIMENTOS[0], motivo: MOTIVOS[0] }));
+        }
+        setShowSuccess(true);
+        fetchStock();
+      } else {
+        const error = await res.json();
+        alert(error.error || 'Erro ao registrar saída');
+      }
+    } catch (error) {
+      console.error('Erro ao registrar saída:', error);
+      alert('Erro ao registrar saída');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  const epiOptions = epis.map((e) => (
+    <option key={e.id} value={e.id}>{e.nome} (Comp: {e.compartimento})</option>
+  ));
 
   return (
     <div className={styles.page}>
@@ -148,10 +220,6 @@ export default function Estoque() {
         <header className={styles.header}>
           <p className={styles.eyebrow}>Almoxarifado</p>
           <h1 className={styles.title}>Estoque</h1>
-          <p className={styles.subtitle}>
-            RF09 a RF11 · Registre entradas de lotes, saídas e abasteça os
-            compartimentos do armário.
-          </p>
         </header>
 
         <div className={styles.cards}>
@@ -167,27 +235,13 @@ export default function Estoque() {
                 <label htmlFor="ent-epi">EPI</label>
                 <select
                   id="ent-epi"
-                  value={entrada.epi}
-                  onChange={(e) => updateEntrada("epi", e.target.value)}
+                  value={entrada.id_epi}
+                  onChange={(e) => updateEntrada("id_epi", e.target.value)}
+                  disabled={submitting}
                 >
-                  {EPI_OPTIONS.map((o) => (
-                    <option key={o} value={o}>{o}</option>
-                  ))}
+                  {epiOptions}
                 </select>
               </div>
-              <div className={styles.field}>
-                <label htmlFor="ent-fornecedor">Fornecedor</label>
-                <select
-                  id="ent-fornecedor"
-                  value={entrada.fornecedor}
-                  onChange={(e) => updateEntrada("fornecedor", e.target.value)}
-                >
-                  {FORNECEDORES.map((o) => (
-                    <option key={o} value={o}>{o}</option>
-                  ))}
-                </select>
-              </div>
-
               <div className={styles.field}>
                 <label htmlFor="ent-lote">Lote</label>
                 <input
@@ -196,6 +250,7 @@ export default function Estoque() {
                   placeholder="LT-0000"
                   value={entrada.lote}
                   onChange={(e) => updateEntrada("lote", e.target.value)}
+                  disabled={submitting}
                 />
               </div>
               <div className={styles.field}>
@@ -207,6 +262,7 @@ export default function Estoque() {
                   placeholder="0"
                   value={entrada.quantidade}
                   onChange={(e) => updateEntrada("quantidade", e.target.value)}
+                  disabled={submitting}
                 />
               </div>
 
@@ -214,33 +270,34 @@ export default function Estoque() {
                 <label htmlFor="ent-data">Data de entrada</label>
                 <input
                   id="ent-data"
-                  type="text"
-                  inputMode="numeric"
-                  autoComplete="off"
-                  maxLength={16}
-                  placeholder="dd/mm/aaaa --:--"
+                  type="datetime-local"
                   value={entrada.dataEntrada}
-                  onChange={(e) => updateEntrada("dataEntrada", mascaraDataHora(e.target.value))}
+                  onChange={(e) => updateEntrada("dataEntrada", e.target.value)}
+                  disabled={submitting}
                 />
               </div>
               <div className={styles.field}>
                 <label htmlFor="ent-validade">Validade</label>
                 <input
                   id="ent-validade"
-                  type="text"
-                  inputMode="numeric"
-                  autoComplete="off"
-                  maxLength={16}
-                  placeholder="dd/mm/aaaa --:--"
+                  type="date"
                   value={entrada.validade}
-                  onChange={(e) => updateEntrada("validade", mascaraDataHora(e.target.value))}
+                  onChange={(e) => updateEntrada("validade", e.target.value)}
+                  disabled={submitting}
                 />
               </div>
             </div>
 
             <div className={styles.actions}>
-              <button type="submit" className={`${styles.btn} ${styles.btnEntrada}`}>
-                Confirmar entrada
+              <button type="submit" className={`${styles.btn} ${styles.btnEntrada}`} disabled={submitting}>
+                {submitting ? (
+                  <>
+                    <Loader2 size={16} className={styles.spinner} />
+                    Salvando...
+                  </>
+                ) : (
+                  'Confirmar entrada'
+                )}
               </button>
             </div>
           </form>
@@ -257,12 +314,11 @@ export default function Estoque() {
                 <label htmlFor="sai-epi">EPI</label>
                 <select
                   id="sai-epi"
-                  value={saida.epi}
-                  onChange={(e) => updateSaida("epi", e.target.value)}
+                  value={saida.id_epi}
+                  onChange={(e) => updateSaida("id_epi", e.target.value)}
+                  disabled={submitting}
                 >
-                  {EPI_OPTIONS.map((o) => (
-                    <option key={o} value={o}>{o}</option>
-                  ))}
+                  {epiOptions}
                 </select>
               </div>
               <div className={styles.field}>
@@ -271,6 +327,7 @@ export default function Estoque() {
                   id="sai-armario"
                   value={saida.armario}
                   onChange={(e) => updateSaida("armario", e.target.value)}
+                  disabled={submitting}
                 >
                   {ARMARIOS.map((o) => (
                     <option key={o} value={o}>{o}</option>
@@ -284,6 +341,7 @@ export default function Estoque() {
                   id="sai-comp"
                   value={saida.compartimento}
                   onChange={(e) => updateSaida("compartimento", e.target.value)}
+                  disabled={submitting}
                 >
                   {COMPARTIMENTOS.map((o) => (
                     <option key={o} value={o}>{o}</option>
@@ -299,6 +357,7 @@ export default function Estoque() {
                   placeholder="0"
                   value={saida.quantidade}
                   onChange={(e) => updateSaida("quantidade", e.target.value)}
+                  disabled={submitting}
                 />
               </div>
 
@@ -306,13 +365,10 @@ export default function Estoque() {
                 <label htmlFor="sai-data">Data/Hora</label>
                 <input
                   id="sai-data"
-                  type="text"
-                  inputMode="numeric"
-                  autoComplete="off"
-                  maxLength={16}
-                  placeholder="dd/mm/aaaa --:--"
+                  type="datetime-local"
                   value={saida.dataHora}
-                  onChange={(e) => updateSaida("dataHora", mascaraDataHora(e.target.value))}
+                  onChange={(e) => updateSaida("dataHora", e.target.value)}
+                  disabled={submitting}
                 />
               </div>
               <div className={styles.field}>
@@ -321,6 +377,7 @@ export default function Estoque() {
                   id="sai-motivo"
                   value={saida.motivo}
                   onChange={(e) => updateSaida("motivo", e.target.value)}
+                  disabled={submitting}
                 >
                   {MOTIVOS.map((o) => (
                     <option key={o} value={o}>{o}</option>
@@ -330,38 +387,74 @@ export default function Estoque() {
             </div>
 
             <div className={styles.actions}>
-              <button type="submit" className={`${styles.btn} ${styles.btnSaida}`}>
-                Confirmar saída
+              <button type="submit" className={`${styles.btn} ${styles.btnSaida}`} disabled={submitting}>
+                {submitting ? (
+                  <>
+                    <Loader2 size={16} className={styles.spinner} />
+                    Salvando...
+                  </>
+                ) : (
+                  'Confirmar saída'
+                )}
               </button>
             </div>
           </form>
         </div>
 
-        <h2 className={styles.sectionTitle}>Saldo por item</h2>
-
-        <div className={styles.tableCard}>
-          <div className={`${styles.row} ${styles.tableHead}`}>
-            <span>EPI</span>
-            <span>Compart.</span>
-            <span>Disponível</span>
-            <span>Mínimo</span>
-            <span>Status</span>
-          </div>
-
-          {stock.map((r) => (
-            <div className={`${styles.row} ${styles.tableRow}`} key={r.id}>
-              <span className={styles.nome}>{r.epi}</span>
-              <span className={styles.compartimento}>{r.compartimento}</span>
-              <span className={styles.disponivel}>{r.disponivel}</span>
-              <span className={styles.minimo}>{r.minimo}</span>
-              <span>
-                <span className={`${styles.badge} ${STATUS_CLASS[r.status]}`}>
-                  {r.status}
-                </span>
-              </span>
-            </div>
-          ))}
+        <div className={styles.sectionWrapper}>
+          <h2 className={styles.sectionTitle}>Saldo por item</h2>
         </div>
+
+        {loading ? (
+          <div className={styles.tableCard}>
+            <div className={`${styles.row} ${styles.tableHead}`}>
+              <span>EPI</span>
+              <span>Compart.</span>
+              <span>Disponível</span>
+              <span>Mínimo</span>
+              <span>Status</span>
+            </div>
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div className={`${styles.row} ${styles.skeletonRow}`} key={i}>
+                <span><div className={styles.skeleton} /></span>
+                <span><div className={styles.skeleton} /></span>
+                <span><div className={styles.skeleton} /></span>
+                <span><div className={styles.skeleton} /></span>
+                <span><div className={styles.skeletonBadge} /></span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className={styles.tableCard}>
+            <div className={`${styles.row} ${styles.tableHead}`}>
+              <span>EPI</span>
+              <span>Compart.</span>
+              <span>Disponível</span>
+              <span>Mínimo</span>
+              <span>Status</span>
+            </div>
+
+            {stock.length === 0 ? (
+              <div className={`${styles.row} ${styles.emptyRow}`}>
+                <span>Nenhum item em estoque</span>
+              </div>
+            ) : (
+              stock.map((r) => (
+                <div className={`${styles.row} ${styles.tableRow}`} key={r.id}>
+                  <span className={styles.nome}>{r.epi}</span>
+                  <span className={styles.compartimento}>{r.compartimento}</span>
+                  <span className={styles.disponivel}>{r.disponivel}</span>
+                  <span className={styles.minimo}>{r.minimo}</span>
+                  <span>
+                    <span className={`${styles.badge} ${STATUS_CLASS[r.status]}`}>
+                      {r.status}
+                    </span>
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
+        )}
       </main>
 
       {showSuccess && (

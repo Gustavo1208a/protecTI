@@ -21,26 +21,19 @@ export async function POST(request: NextRequest) {
     try {
       await conn.beginTransaction();
 
-      // Resolve funcionario ID (accept either numeric id_func or matricula string)
-      let funcionarioId: number;
-      if (typeof id_func === 'number' || /^\d+$/.test(String(id_func))) {
-        funcionarioId = parseInt(String(id_func));
-      } else {
-        // Assume it's a matricula
-        const [funcRows] = await conn.execute(
-          'SELECT id_func FROM funcionario WHERE matricula = ?',
-          [id_func]
+      const [funcRows] = await conn.execute(
+        'SELECT id_func FROM funcionario WHERE id_func = ? OR matricula = ?',
+        [id_func, String(id_func)]
+      );
+      const funcs = funcRows as any[];
+      if (funcs.length === 0) {
+        await conn.rollback();
+        return NextResponse.json(
+          { error: 'Funcionário não encontrado' },
+          { status: 404 }
         );
-        const funcs = funcRows as any[];
-        if (funcs.length === 0) {
-          await conn.rollback();
-          return NextResponse.json(
-            { error: 'Funcionário não encontrado' },
-            { status: 404 }
-          );
-        }
-        funcionarioId = funcs[0].id_func;
       }
+      const funcionarioId = funcs[0].id_func;
 
       // Check if EPI exists and has stock
       const [epiRows] = await conn.execute(

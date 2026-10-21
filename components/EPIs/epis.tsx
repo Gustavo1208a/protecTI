@@ -15,8 +15,6 @@ const CATEGORIAS = [
   "Proteção dos pés",
 ];
 
-const FORNECEDORES = ["SafetyMax Ltda", "ProtegeMais EPI", "Vida Segura Equipamentos"];
-
 const ARMARIOS = ["Armário 01", "Armário 02", "Armário 03"];
 
 type Epi = {
@@ -30,7 +28,6 @@ type Epi = {
   categoria: string | null;
   tamanho: string | null;
   lote: string | null;
-  fornecedor: string | null;
   data_fabricacao: string | null;
   armario: string | null;
   compartimento: string;
@@ -44,7 +41,6 @@ type EditForm = {
   quantidadeInicial: number;
   quantidadeMinima: number;
   lote: string;
-  fornecedor: string;
   dataFabricacao: string;
   dataValidade: string;
   armario: string;
@@ -88,7 +84,6 @@ export default function Epis() {
       quantidadeInicial: epi.quantidade_estoque,
       quantidadeMinima: epi.quantidade_minima,
       lote: epi.lote || "",
-      fornecedor: epi.fornecedor || "",
       dataFabricacao: epi.data_fabricacao || "",
       dataValidade: epi.validade_ca || "",
       armario: epi.armario || "",
@@ -343,17 +338,6 @@ export default function Epis() {
                               value={editForm.lote || ""}
                               onChange={(ev) => setEditForm({ ...editForm, lote: ev.target.value })}
                             />
-                          </div>
-                          <div className={styles.editField}>
-                            <label>Fornecedor</label>
-                            <select
-                              value={editForm.fornecedor || FORNECEDORES[0]}
-                              onChange={(ev) => setEditForm({ ...editForm, fornecedor: ev.target.value })}
-                            >
-                              {FORNECEDORES.map((f) => (
-                                <option key={f} value={f}>{f}</option>
-                              ))}
-                            </select>
                           </div>
                         </div>
                       </div>

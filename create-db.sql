@@ -45,7 +45,6 @@ CREATE TABLE IF NOT EXISTS usuario (
 CREATE TABLE IF NOT EXISTS epi (
   id_epi INT AUTO_INCREMENT PRIMARY KEY,
   nome VARCHAR(150) NOT NULL,
-  descricao TEXT,
   ca VARCHAR(50) COMMENT 'Certificado de Aprovação',
   validade_ca DATE,
   quantidade_estoque INT DEFAULT 0,
@@ -53,7 +52,6 @@ CREATE TABLE IF NOT EXISTS epi (
   categoria VARCHAR(100),
   tamanho VARCHAR(20),
   lote VARCHAR(50),
-  fornecedor VARCHAR(150),
   data_fabricacao DATE,
   armario VARCHAR(50),
   compartimento VARCHAR(50) NOT NULL,
@@ -82,6 +80,25 @@ CREATE TABLE IF NOT EXISTS devolucao_epi (
   estado ENUM('bom', 'danificado', 'perdido') DEFAULT 'bom',
   observacao TEXT,
   FOREIGN KEY (id_entrega) REFERENCES entrega_epi(id_entrega)
+);
+
+-- ============================================
+-- Tabelas de movimentação de estoque
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS movimentacao_estoque (
+  id_movimentacao INT AUTO_INCREMENT PRIMARY KEY,
+  id_epi INT NOT NULL,
+  tipo ENUM('entrada', 'saida') NOT NULL,
+  quantidade INT NOT NULL,
+  lote VARCHAR(50),
+  data_validade DATE,
+  armario VARCHAR(50),
+  compartimento VARCHAR(50),
+  motivo VARCHAR(100),
+  observacao TEXT,
+  data_movimentacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (id_epi) REFERENCES epi(id_epi)
 );
 
 -- ============================================

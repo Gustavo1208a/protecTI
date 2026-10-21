@@ -15,7 +15,6 @@ export async function PUT(
       quantidadeInicial,
       quantidadeMinima,
       lote,
-      fornecedor,
       dataFabricacao,
       dataValidade,
       armario,
@@ -52,7 +51,6 @@ export async function PUT(
         categoria = ?,
         tamanho = ?,
         lote = ?,
-        fornecedor = ?,
         data_fabricacao = ?,
         armario = ?,
         compartimento = ?
@@ -66,7 +64,6 @@ export async function PUT(
         categoria || null,
         tamanho || null,
         lote || null,
-        fornecedor || null,
         dataFabricacao || null,
         armario || null,
         compartimento,

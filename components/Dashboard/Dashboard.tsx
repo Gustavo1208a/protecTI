@@ -11,8 +11,8 @@ type StatCard = {
 };
 
 const STATS_DEFAULTS: StatCard[] = [
-  { label: "Total de funcionários", value: "—", color: "var(--yellow-1)" },
-  { label: "EPIs em estoque", value: "288", color: "var(--text-main)" },
+  { label: "Total de funcionários", value: "0", color: "var(--yellow-1)" },
+  { label: "EPIs em estoque", value: "0", color: "var(--text-main)" },
   { label: "Devoluções", value: "80", color: "#4ade80" },
   { label: "Vencidos / A vencer", value: "1/1", color: "#f36a6a" },
 ];
@@ -60,6 +60,16 @@ export default function Dashboard() {
           setStats(prev => prev.map(stat =>
             stat.label === "Total de funcionários"
               ? { ...stat, value: String(data.funcionarios.length) }
+              : stat
+          ));
+        }
+
+        const resEpis = await fetch('/api/epis');
+        const dataEpis = await resEpis.json();
+        if (resEpis.ok && dataEpis.epis) {
+          setStats(prev => prev.map(stat =>
+            stat.label === "EPIs em estoque"
+              ? { ...stat, value: String(dataEpis.epis.length) }
               : stat
           ));
         }

@@ -19,7 +19,7 @@ Desenvolver um sistema inteligente de gestão de EPIs capaz de centralizar e aut
 O protecTI será um sistema web integrado a um armário inteligente utilizando Arduino, permitindo identificar funcionários e EPIs e registrar automaticamente retiradas e devoluções. O sistema também realizará o controle do estoque, validade dos equipamentos, alertas e geração de relatórios.
 
 ### Principais funcionalidades
-- Cadastro e gerenciamento de funcionários, usuários, EPIs e fornecedores.
+- Cadastro e gerenciamento de funcionários, usuários e EPIs.
 - Controle automático de estoque, retiradas e devoluções.
 - Armário inteligente integrado ao Arduino/ESP32.
 - Identificação de funcionários e EPIs por RFID/QR Code.

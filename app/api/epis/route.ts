@@ -26,7 +26,6 @@ export async function POST(request: NextRequest) {
       quantidadeInicial,
       quantidadeMinima,
       lote,
-      fornecedor,
       dataFabricacao,
       dataValidade,
       armario,
@@ -54,11 +53,10 @@ export async function POST(request: NextRequest) {
     }
 
     const [result] = await pool.execute(
-      `INSERT INTO epi (nome, descricao, ca, validade_ca, quantidade_estoque, quantidade_minima, categoria, tamanho, lote, fornecedor, data_fabricacao, armario, compartimento)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO epi (nome, ca, validade_ca, quantidade_estoque, quantidade_minima, categoria, tamanho, lote, data_fabricacao, armario, compartimento)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         nome,
-        null,
         numeroCa,
         dataValidade || null,
         parseInt(quantidadeInicial) || 0,
@@ -66,7 +64,6 @@ export async function POST(request: NextRequest) {
         categoria || null,
         tamanho || null,
         lote || null,
-        fornecedor || null,
         dataFabricacao || null,
         armario || null,
         compartimento,

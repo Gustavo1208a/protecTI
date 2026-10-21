@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Loader2, AlertCircle, CheckCircle } from "lucide-react";
 import Sidebar from "@/components/Sidebar/Sidebar";
-import { FUNCIONARIOS, type Funcionario } from "@/lib/funcionarios";
 import styles from "./entrega.module.css";
 
 type Step = "funcionarios" | "epis" | "confirmacao";
@@ -23,6 +22,18 @@ const SETOR_ENTREGA: Record<string, string> = {
   "indianara-lima": "Segurança",
 };
 
+type Funcionario = {
+  id: number;
+  nome: string;
+  matricula: string;
+  cpf: string;
+  telefone: string | null;
+  setor: string | null;
+  cargo: string | null;
+  status: string;
+  createdAt: string;
+};
+
 type EpiEntrega = {
   id_epi: number;
   nome: string;
@@ -37,11 +48,30 @@ export default function Entrega() {
   const [step, setStep] = useState<Step>("funcionarios");
   const [funcionario, setFuncionario] = useState<Funcionario | null>(null);
   const [epi, setEpi] = useState<EpiEntrega | null>(null);
+  const [funcionarios, setFuncionarios] = useState<Funcionario[]>([]);
   const [epis, setEpis] = useState<EpiEntrega[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const stepIndex = STEPS.findIndex((s) => s.key === step);
+
+  useEffect(() => {
+    async function fetchFuncionarios() {
+      try {
+        const res = await fetch("/api/funcionarios");
+        const data = await res.json();
+        if (res.ok && data.funcionarios) {
+          setFuncionarios(data.funcionarios.filter((f: Funcionario) => f.status === "ativo"));
+        } else {
+          throw new Error(data.error || "Erro ao buscar funcionários");
+        }
+      } catch (err) {
+        setError("Erro ao carregar funcionários");
+        console.error(err);
+      }
+    }
+    fetchFuncionarios();
+  }, []);
 
   useEffect(() => {
     async function fetchEpis() {
@@ -61,8 +91,10 @@ export default function Entrega() {
         setLoading(false);
       }
     }
-    fetchEpis();
-  }, []);
+    if (step === "epis") {
+      fetchEpis();
+    }
+  }, [step]);
 
   function escolherFuncionario(f: Funcionario) {
     setFuncionario(f);
@@ -91,7 +123,7 @@ export default function Entrega() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          id_func: funcionario.matricula,
+          id_func: funcionario.id,
           id_epi: epi.id_epi,
           quantidade: 1,
         }),
@@ -112,10 +144,10 @@ export default function Entrega() {
     }
   }
 
-  // "2028-03-15" -> "15/03/2028" (sem converter fuso horário)
+  // "2028-03-15" ou "2028-03-15T00:00:00.000Z" -> "15/03/2028" (sem converter fuso horário)
   function formatarData(iso: string | null) {
-    if (!iso) return "-";
-    const [ano, mes, dia] = iso.split("-");
+    if (!iso) return "Não informada";
+    const [ano, mes, dia] = iso.split("T")[0].split("-");
     return `${dia}/${mes}/${ano}`;
   }
 
@@ -160,19 +192,23 @@ export default function Entrega() {
 
         {step === "funcionarios" && (
           <div className={styles.cards}>
-            {FUNCIONARIOS.map((f) => (
-              <button
-                key={f.id}
-                type="button"
-                className={styles.card}
-                onClick={() => escolherFuncionario(f)}
-              >
-                <span className={styles.cardName}>{f.nome}</span>
-                <span className={styles.cardTag}>{SETOR_ENTREGA[f.id] ?? f.setor}</span>
-                <span className={styles.cardRole}>{f.cargo}</span>
-                <span className={styles.cardMeta}>Cadastro {f.matricula}</span>
-              </button>
-            ))}
+            {funcionarios.length === 0 && !loading ? (
+              <div className={styles.emptyState}>Nenhum funcionário ativo cadastrado</div>
+            ) : (
+              funcionarios.map((f) => (
+                <button
+                  key={f.id}
+                  type="button"
+                  className={styles.card}
+                  onClick={() => escolherFuncionario(f)}
+                >
+                  <span className={styles.cardName}>{f.nome}</span>
+                  <span className={styles.cardTag}>{SETOR_ENTREGA[f.id] ?? f.setor ?? "-"}</span>
+                  <span className={styles.cardRole}>{f.cargo ?? "-"}</span>
+                  <span className={styles.cardMeta}>Cadastro {f.matricula}</span>
+                </button>
+              ))
+            )}
           </div>
         )}
 
@@ -190,7 +226,7 @@ export default function Entrega() {
               epis
                 .filter((e) => e.quantidade_estoque > 0)
                 .map((e) => {
-                  const vencido = e.validade_ca && new Date(e.validade_ca) < new Date();
+                  const vencido = Boolean(e.validade_ca && new Date(e.validade_ca) < new Date());
                   const estoqueBaixo = e.quantidade_estoque <= e.quantidade_minima && e.quantidade_minima > 0;
                   return (
                     <button
@@ -232,7 +268,7 @@ export default function Entrega() {
             {epis.length === 0 && !loading && (
               <div className={styles.emptyState}>Nenhum EPI cadastrado</div>
             )}
-            {epis.filter((e) => e.quantidade_estoque > 0).length === 0 && !loading && (
+            {epis.length > 0 && epis.filter((e) => e.quantidade_estoque > 0).length === 0 && !loading && (
               <div className={styles.emptyState}>Nenhum EPI disponível em estoque</div>
             )}
           </div>
@@ -252,7 +288,7 @@ export default function Entrega() {
               <input
                 id="c-setor"
                 readOnly
-                value={SETOR_ENTREGA[funcionario.id] ?? funcionario.setor}
+                value={SETOR_ENTREGA[funcionario.id] ?? funcionario.setor ?? "-"}
               />
 
               <label htmlFor="c-epi">EPI</label>
