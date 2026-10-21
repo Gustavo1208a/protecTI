@@ -27,7 +27,7 @@ export async function GET(
 
     // Fetch movimentações (entregas + devoluções)
     const [entregasRows] = await pool.execute(
-      `SELECT e.id_entrega as id, epi.nome as epi, 'Entrega' as acao, e.quantidade as qtd, DATE_FORMAT(e.data_entrega, '%d/%m/%Y %H:%i') as dataHora
+      `SELECT e.id_entrega as id, epi.nome as epi, 'Entrega' as acao, e.quantidade as qtd, DATE_FORMAT(e.data_entrega, '%d/%m/%Y %H:%i') as dataHora, e.data_entrega as ts
        FROM entrega_epi e
        JOIN epi ON e.id_epi = epi.id_epi
        WHERE e.id_func = ?
@@ -36,7 +36,7 @@ export async function GET(
     );
 
     const [devolucoesRows] = await pool.execute(
-      `SELECT d.id_devolucao as id, epi.nome as epi, 'Devolução' as acao, e.quantidade as qtd, DATE_FORMAT(d.data_devolucao, '%d/%m/%Y %H:%i') as dataHora
+      `SELECT d.id_devolucao as id, epi.nome as epi, 'Devolução' as acao, d.quantidade as qtd, DATE_FORMAT(d.data_devolucao, '%d/%m/%Y %H:%i') as dataHora, d.data_devolucao as ts
        FROM devolucao_epi d
        JOIN entrega_epi e ON d.id_entrega = e.id_entrega
        JOIN epi ON e.id_epi = epi.id_epi
@@ -45,12 +45,14 @@ export async function GET(
       [id]
     );
 
+    // "ts" guarda a data/hora real só para ordenar (o texto dd/mm/aaaa não ordena).
     const entregas = (entregasRows as any[]).map(e => ({
       id: `E-${e.id}`,
       epi: e.epi,
       acao: e.acao,
       qtd: e.qtd,
       dataHora: e.dataHora,
+      ts: e.ts,
     }));
 
     const devolucoes = (devolucoesRows as any[]).map(d => ({
@@ -59,54 +61,25 @@ export async function GET(
       acao: d.acao,
       qtd: d.qtd,
       dataHora: d.dataHora,
+      ts: d.ts,
     }));
 
     const movimentacoes = [...entregas, ...devolucoes]
-      .sort((a, b) => new Date(b.dataHora.split('/').reverse().join('-')).getTime() - new Date(a.dataHora.split('/').reverse().join('-')).getTime())
-      .slice(0, 20);
+      .sort((a, b) => new Date(b.ts).getTime() - new Date(a.ts).getTime())
+      .slice(0, 20)
+      .map(({ ts, ...m }) => m);
 
-    // Stats
-    const [epiEmPosseResult] = await pool.execute(
-      `SELECT
-        e.id_epi,
-        COALESCE(SUM(e.quantidade), 0) - COALESCE((
-          SELECT COALESCE(SUM(e2.quantidade), 0) FROM entrega_epi e2
-          JOIN devolucao_epi d2 ON d2.id_entrega = e2.id_entrega
-          WHERE e2.id_func = ? AND e2.id_epi = e.id_epi
-        ), 0) as qtd
-       FROM entrega_epi e
-       WHERE e.id_func = ?
-       GROUP BY e.id_epi`,
-      [id, id]
-    );
-
-    const epiEmPosse = (epiEmPosseResult as any[]).reduce((sum, r) => sum + (r.qtd || 0), 0);
-
-    const [retiradasResult] = await pool.execute(
-      `SELECT COALESCE(SUM(quantidade), 0) as total FROM entrega_epi WHERE id_func = ?`,
+    // Os quatro números do topo do perfil vêm prontos da view vw_funcionario_resumo
+    const [resumoRows] = await pool.execute(
+      `SELECT epi_em_posse, retiradas_no_ano, devolucoes, pendencias
+       FROM vw_funcionario_resumo WHERE id_func = ?`,
       [id]
     );
-    const retiradasNoAno = (retiradasResult as any[])[0]?.total || 0;
-
-    const [devolucoesTotalResult] = await pool.execute(
-      `SELECT COALESCE(SUM(e.quantidade), 0) as total
-       FROM devolucao_epi d
-       JOIN entrega_epi e ON d.id_entrega = e.id_entrega
-       WHERE e.id_func = ?`,
-      [id]
-    );
-    const devolucoesTotal = (devolucoesTotalResult as any[])[0]?.total || 0;
-
-    const [pendenciasResult] = await pool.execute(
-      `SELECT COALESCE(COUNT(*), 0) as total
-       FROM entrega_epi e
-       WHERE e.id_func = ?
-       AND NOT EXISTS (
-         SELECT 1 FROM devolucao_epi d WHERE d.id_entrega = e.id_entrega
-       )`,
-      [id]
-    );
-    const pendencias = (pendenciasResult as any[])[0]?.total || 0;
+    const resumo = (resumoRows as any[])[0] || {};
+    const epiEmPosse = resumo.epi_em_posse || 0;
+    const retiradasNoAno = resumo.retiradas_no_ano || 0;
+    const devolucoesTotal = resumo.devolucoes || 0;
+    const pendencias = resumo.pendencias || 0;
 
     return NextResponse.json({
       funcionario: {

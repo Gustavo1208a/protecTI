@@ -75,10 +75,12 @@ export async function POST(request: NextRequest) {
         const permissao = PERFIL_TO_PERMISSAO[perfil] || 1;
         const hashedPassword = await hashPassword(senha);
 
+        // id_func liga a conta ao funcionário; id_cargo vem do perfil escolhido
+        // (os nomes dos perfis são os mesmos da tabela cargo).
         await connection.execute(
-          `INSERT INTO usuario (id_usuario, nome, senha, permissao, id_cargo, acesso_site)
-           VALUES (?, ?, ?, ?, NULL, ?)`,
-          [matricula, nome, hashedPassword, permissao, temAcesso]
+          `INSERT INTO usuario (id_usuario, id_func, nome, senha, permissao, id_cargo, acesso_site)
+           VALUES (?, ?, ?, ?, ?, (SELECT id_cargo FROM cargo WHERE nome = ?), ?)`,
+          [matricula, funcInsertResult.insertId, nome, hashedPassword, permissao, perfil || null, temAcesso]
         );
       }
 
