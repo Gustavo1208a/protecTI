@@ -13,9 +13,8 @@ const SETORES = [
   "Logística",
   "Almoxarifado",
   "Segurança",
-  "Infraestrutura",
   "Prevenção",
-  "Gerenciar",
+  "Gerência",
 ];
 
 const PERFIS = ["Funcionário", "Almoxarife", "Técnico de Segurança", "Administrador"];

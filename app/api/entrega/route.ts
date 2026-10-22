@@ -22,8 +22,8 @@ export async function POST(request: NextRequest) {
       await conn.beginTransaction();
 
       const [funcRows] = await conn.execute(
-        'SELECT id_func FROM funcionario WHERE id_func = ? OR matricula = ?',
-        [id_func, String(id_func)]
+        'SELECT id_func FROM funcionario WHERE id_func = ?',
+        [id_func]
       );
       const funcs = funcRows as any[];
       if (funcs.length === 0) {

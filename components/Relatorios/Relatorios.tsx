@@ -1,12 +1,11 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
-import { Download } from "lucide-react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
+import { Download, Loader2, AlertTriangle, RefreshCw } from "lucide-react";
 import Sidebar from "@/components/Sidebar/Sidebar";
-import { FUNCIONARIOS } from "@/lib/funcionarios";
 import styles from "./relatorios.module.css";
 
-type Acao = "Entrega" | "Devolução" | "Entrada";
+type Acao = "Entrega" | "Devolução" | "Entrada" | "Saída";
 
 type Movimentacao = {
   id: string;
@@ -16,27 +15,30 @@ type Movimentacao = {
   data: string; // dd/mm/aaaa hh:mm
 };
 
-const MOVIMENTACOES: Movimentacao[] = [
-  { id: "MV-9001", funcionario: "Carlos Mendes", quantidade: 42, acao: "Entrega", data: "09/09/2026 08:12" },
-  { id: "MV-9002", funcionario: "Joana Silva", quantidade: 23, acao: "Devolução", data: "09/09/2026 08:40" },
-  { id: "MV-9003", funcionario: "Amanda Medeiros", quantidade: 67, acao: "Entrada", data: "08/09/2026 17:05" },
-  { id: "MV-9004", funcionario: "Indianara Lima", quantidade: 8, acao: "Entrega", data: "08/09/2026 14:33" },
-];
+type Resumo = {
+  entregas: number;
+  devolucoes: number;
+  estoqueAtual: number;
+};
 
-const CONSUMO_POR_SETOR: { setor: string; valor: number }[] = [
-  { setor: "Produção", valor: 128 },
-  { setor: "Logística", valor: 61 },
-  { setor: "Almoxarifado", valor: 33 },
-  { setor: "Segurança", valor: 18 },
-];
+type ConsumoSetor = {
+  setor: string;
+  valor: number;
+};
 
-const SETORES = ["Produção", "Logística", "Almoxarifado", "Segurança"];
+type RelatorioData = {
+  movimentacoes: Movimentacao[];
+  resumo: Resumo;
+  consumoPorSetor: ConsumoSetor[];
+};
 
-const RESUMO_PADRAO = {
-  entregas: 150,
-  devolucoes: 91,
-  estoqueAtual: 288,
-  custoEstimado: "R$8.420",
+type Funcionario = {
+  id: number;
+  nome: string;
+  matricula: string;
+  setor: string;
+  cargo: string;
+  status: string;
 };
 
 // Máscara de data no padrão brasileiro (dd/mm/aaaa), sem depender do
@@ -109,31 +111,137 @@ async function exportarCsv(linhas: Movimentacao[]) {
   URL.revokeObjectURL(url);
 }
 
+// Skeleton components
+function Skeleton({ className = "", width = "100%", height = "16px", borderRadius = "6px" }) {
+  return (
+    <div
+      className={`${styles.skeleton} ${className}`}
+      style={{ width, height, borderRadius, background: "linear-gradient(90deg, rgba(242,169,12,0.1) 25%, rgba(242,169,12,0.2) 50%, rgba(242,169,12,0.1) 75%)", backgroundSize: "200% 100%", animation: "shimmer 1.5s infinite" }}
+    />
+  );
+}
+
+function SummarySkeleton() {
+  return (
+    <div className={styles.summaryCard}>
+      <Skeleton width="80%" height="12px" borderRadius="4px" />
+      <Skeleton width="50%" height="34px" borderRadius="4px" />
+    </div>
+  );
+}
+
+function TableRowSkeleton() {
+  return (
+    <div className={`${styles.row} ${styles.tableRow}`}>
+      <Skeleton width="100%" height="14px" />
+      <Skeleton width="100%" height="14px" />
+      <Skeleton width="100%" height="14px" />
+      <Skeleton width="100%" height="14px" />
+      <Skeleton width="100%" height="14px" />
+    </div>
+  );
+}
+
+const SETORES = ["Produção", "Manutenção", "Logística", "Almoxarifado", "Segurança", "Prevenção", "Gerência"];
+
 export default function Relatorios() {
-  const [inicio, setInicio] = useState("01/09/2026");
-  const [fim, setFim] = useState("09/09/2026");
+  // Initialize default dates for current month
+  const pad2 = (n: number) => String(n).padStart(2, '0');
+  const hoje = new Date();
+  const primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+  const defaultInicio = `${pad2(primeiroDia.getDate())}/${pad2(primeiroDia.getMonth() + 1)}/${primeiroDia.getFullYear()}`;
+  const defaultFim = `${pad2(hoje.getDate())}/${pad2(hoje.getMonth() + 1)}/${hoje.getFullYear()}`;
+
+  const [inicio, setInicio] = useState(defaultInicio);
+  const [fim, setFim] = useState(defaultFim);
   const [setor, setSetor] = useState("TODOS");
   const [funcionario, setFuncionario] = useState("TODOS");
-  const [filtros, setFiltros] = useState({ inicio, fim, setor, funcionario });
+  const [filtros, setFiltros] = useState({
+    inicio: defaultInicio,
+    fim: defaultFim,
+    setor: "TODOS",
+    funcionario: "TODOS"
+  });
+  const [data, setData] = useState<RelatorioData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [funcionarios, setFuncionarios] = useState<Funcionario[]>([]);
 
-  const linhasFiltradas = useMemo(() => {
-    const inicioChave = paraChaveOrdenavel(filtros.inicio);
-    const fimChave = paraChaveOrdenavel(filtros.fim);
+  // Fetch funcionarios for dropdown
+  useEffect(() => {
+    fetch('/api/funcionarios')
+      .then(res => res.json())
+      .then(result => {
+        if (result.funcionarios) {
+          setFuncionarios(result.funcionarios.filter((f: Funcionario) => f.status === 'ativo'));
+        }
+      })
+      .catch(err => console.error('Erro ao buscar funcionários:', err));
+  }, []);
 
-    return MOVIMENTACOES.filter((m) => {
-      if (filtros.funcionario !== "TODOS" && m.funcionario !== filtros.funcionario) {
-        return false;
-      }
-      const dataMovimentacao = paraChaveOrdenavel(m.data.slice(0, 10));
-      if (inicioChave && dataMovimentacao < inicioChave) return false;
-      if (fimChave && dataMovimentacao > fimChave) return false;
-      return true;
-    });
+  const fetchRelatorio = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const params = new URLSearchParams();
+      if (filtros.inicio) params.set('inicio', filtroParaApi(filtros.inicio));
+      if (filtros.fim) params.set('fim', filtroParaApi(filtros.fim));
+      if (filtros.setor && filtros.setor !== 'TODOS') params.set('setor', filtros.setor);
+      if (filtros.funcionario && filtros.funcionario !== 'TODOS') params.set('funcionario', filtros.funcionario);
+
+      const res = await fetch(`/api/relatorios?${params.toString()}`);
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Erro ao buscar relatório");
+      setData(result);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro desconhecido");
+      setData(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Converte dd/mm/aaaa para aaaa-mm-dd para API
+  function filtroParaApi(dataBr: string) {
+    const [dia, mes, ano] = dataBr.split("/");
+    if (!dia || !mes || !ano || ano.length < 4) return "";
+    return `${ano}-${mes}-${dia}`;
+  }
+
+  useEffect(() => {
+    fetchRelatorio();
   }, [filtros]);
 
-  // TODO: quando houver backend, os cartões de resumo e o consumo por setor
-  // devem ser recalculados a partir do período/setor selecionado.
-  const resumo = RESUMO_PADRAO;
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchField, setSearchField] = useState<"all" | "id" | "funcionario" | "acao" | "data">("all");
+
+  const linhasFiltradas = data?.movimentacoes || [];
+  const resumo = data?.resumo || { entregas: 0, devolucoes: 0, estoqueAtual: 0 };
+
+  // Filtrar linhas pela busca
+  const linhasComBusca = searchTerm
+    ? linhasFiltradas.filter((m) => {
+        const term = searchTerm.toLowerCase();
+        switch (searchField) {
+          case "id":
+            return m.id.toLowerCase().includes(term);
+          case "funcionario":
+            return m.funcionario.toLowerCase().includes(term);
+          case "acao":
+            return m.acao.toLowerCase().includes(term);
+          case "data":
+            return m.data.toLowerCase().includes(term);
+          default:
+            return (
+              m.id.toLowerCase().includes(term) ||
+              m.funcionario.toLowerCase().includes(term) ||
+              m.acao.toLowerCase().includes(term) ||
+              m.data.toLowerCase().includes(term) ||
+              String(m.quantidade).includes(term)
+            );
+        }
+      })
+    : linhasFiltradas;
 
   function handleGerar(e: FormEvent) {
     e.preventDefault();
@@ -156,6 +264,7 @@ export default function Relatorios() {
             type="button"
             className={styles.exportBtn}
             onClick={() => exportarCsv(linhasFiltradas)}
+            disabled={loading || linhasFiltradas.length === 0}
           >
             <Download size={16} strokeWidth={2} />
             Exportar CSV
@@ -174,6 +283,7 @@ export default function Relatorios() {
               placeholder="dd/mm/aaaa"
               value={inicio}
               onChange={(e) => setInicio(mascaraData(e.target.value))}
+              disabled={loading}
             />
           </div>
           <div className={styles.field}>
@@ -187,6 +297,7 @@ export default function Relatorios() {
               placeholder="dd/mm/aaaa"
               value={fim}
               onChange={(e) => setFim(mascaraData(e.target.value))}
+              disabled={loading}
             />
           </div>
           <div className={styles.field}>
@@ -195,6 +306,7 @@ export default function Relatorios() {
               id="rel-setor"
               value={setor}
               onChange={(e) => setSetor(e.target.value)}
+              disabled={loading}
             >
               <option value="TODOS">TODOS</option>
               {SETORES.map((s) => (
@@ -208,75 +320,132 @@ export default function Relatorios() {
               id="rel-funcionario"
               value={funcionario}
               onChange={(e) => setFuncionario(e.target.value)}
+              disabled={loading}
             >
               <option value="TODOS">TODOS</option>
-              {FUNCIONARIOS.map((f) => (
+              {funcionarios.map((f) => (
                 <option key={f.id} value={f.nome}>{f.nome}</option>
               ))}
             </select>
           </div>
 
-          <button type="submit" className={styles.gerarBtn}>
-            Gerar relatório
+          <button type="submit" className={styles.gerarBtn} disabled={loading}>
+            {loading ? (
+              <>
+                <Loader2 size={16} strokeWidth={2.5} className={styles.spinner} />
+                Carregando...
+              </>
+            ) : (
+              "Gerar relatório"
+            )}
           </button>
         </form>
 
-        <div className={styles.summary}>
-          <div className={styles.summaryCard}>
-            <p className={styles.summaryLabel}>Entregas</p>
-            <p className={`${styles.summaryValue} ${styles.summaryEntregas}`}>{resumo.entregas}</p>
-          </div>
-          <div className={styles.summaryCard}>
-            <p className={styles.summaryLabel}>Devoluções</p>
-            <p className={`${styles.summaryValue} ${styles.summaryDevolucoes}`}>{resumo.devolucoes}</p>
-          </div>
-          <div className={styles.summaryCard}>
-            <p className={styles.summaryLabel}>Estoque atual</p>
-            <p className={`${styles.summaryValue} ${styles.summaryEstoque}`}>{resumo.estoqueAtual}</p>
-          </div>
-          <div className={styles.summaryCard}>
-            <p className={styles.summaryLabel}>Custo estimado</p>
-            <p className={`${styles.summaryValue} ${styles.summaryCusto}`}>{resumo.custoEstimado}</p>
-          </div>
-        </div>
-
-        <div className={styles.tableCard}>
-          <div className={`${styles.row} ${styles.tableHead}`}>
-            <span>ID</span>
-            <span>Funcionário</span>
-            <span>Quantidade</span>
-            <span>Ação</span>
-            <span>Data</span>
-          </div>
-
-          {linhasFiltradas.map((m) => (
-            <div className={`${styles.row} ${styles.tableRow}`} key={m.id}>
-              <span className={styles.idCell}>{m.id}</span>
-              <span className={styles.funcionarioCell}>{m.funcionario}</span>
-              <span>{m.quantidade}</span>
-              <span className={styles.acaoCell}>{m.acao}</span>
-              <span className={styles.dataCell}>{m.data}</span>
+        {loading ? (
+          <>
+            <div className={styles.summary}>
+              <SummarySkeleton />
+              <SummarySkeleton />
+              <SummarySkeleton />
+              <SummarySkeleton />
             </div>
-          ))}
-
-          {linhasFiltradas.length === 0 && (
-            <div className={styles.tableEmpty}>
-              Nenhuma movimentação encontrada para os filtros selecionados.
-            </div>
-          )}
-        </div>
-
-        <section className={styles.consumoCard}>
-          <h2 className={styles.consumoTitle}>Consumo por setor</h2>
-          <div className={styles.consumoGrid}>
-            {CONSUMO_POR_SETOR.map((c) => (
-              <div className={styles.consumoItem} key={c.setor}>
-                <span className={styles.consumoSetor}>{c.setor}</span>
-                <span className={styles.consumoValor}>{c.valor}</span>
+            <div className={styles.tableCard}>
+              <div className={`${styles.row} ${styles.tableHead}`}>
+                <span>ID</span>
+                <span>Funcionário</span>
+                <span>Quantidade</span>
+                <span>Ação</span>
+                <span>Data</span>
               </div>
-            ))}
+              {Array.from({ length: 4 }).map((_, i) => (
+                <TableRowSkeleton key={i} />
+              ))}
+            </div>
+          </>
+        ) : error ? (
+          <div className={styles.errorCard}>
+            <AlertTriangle size={32} strokeWidth={2} className={styles.errorIcon} />
+            <p>{error}</p>
+            <button className={styles.retryBtn} onClick={fetchRelatorio}>
+              <RefreshCw size={14} strokeWidth={2} />
+              Tentar novamente
+            </button>
           </div>
-        </section>
+        ) : (
+          <>
+            <div className={styles.summary}>
+              <div className={styles.summaryCard}>
+                <p className={styles.summaryLabel}>Entregas</p>
+                <p className={`${styles.summaryValue} ${styles.summaryEntregas}`}>{resumo.entregas}</p>
+              </div>
+              <div className={styles.summaryCard}>
+                <p className={styles.summaryLabel}>Devoluções</p>
+                <p className={`${styles.summaryValue} ${styles.summaryDevolucoes}`}>{resumo.devolucoes}</p>
+              </div>
+              <div className={styles.summaryCard}>
+                <p className={styles.summaryLabel}>Estoque atual</p>
+                <p className={`${styles.summaryValue} ${styles.summaryEstoque}`}>{resumo.estoqueAtual}</p>
+              </div>
+            </div>
+
+            <div className={styles.tableSection}>
+              <div className={styles.tableHeaderRow}>
+                <h2 className={styles.sectionTitle}>Movimentações</h2>
+                <div className={styles.searchBar}>
+                  <select
+                    value={searchField}
+                    onChange={(e) => setSearchField(e.target.value as "all" | "id" | "funcionario" | "acao" | "data")}
+                    disabled={loading}
+                    className={styles.searchFieldSelect}
+                  >
+                    <option value="all">Todos</option>
+                    <option value="id">ID</option>
+                    <option value="funcionario">Funcionário</option>
+                    <option value="acao">Ação</option>
+                    <option value="data">Data</option>
+                  </select>
+                  <input
+                    type="text"
+                    placeholder="Buscar na tabela..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    disabled={loading}
+                    className={styles.searchInput}
+                  />
+                </div>
+              </div>
+              <div className={styles.tableWrapper}>
+                <div className={styles.tableCard}>
+                  <div className={`${styles.row} ${styles.tableHead}`}>
+                    <span>ID</span>
+                    <span>Funcionário</span>
+                    <span>Quantidade</span>
+                    <span>Ação</span>
+                    <span>Data</span>
+                  </div>
+
+                  {linhasComBusca.map((m) => (
+                    <div className={`${styles.row} ${styles.tableRow}`} key={m.id}>
+                      <span className={styles.idCell}>{m.id}</span>
+                      <span className={styles.funcionarioCell}>{m.funcionario}</span>
+                      <span>{m.quantidade}</span>
+                      <span className={styles.acaoCell}>{m.acao}</span>
+                      <span className={styles.dataCell}>{m.data}</span>
+                    </div>
+                  ))}
+
+                  {linhasComBusca.length === 0 && (
+                    <div className={styles.tableEmpty}>
+                      {searchTerm
+                        ? "Nenhuma movimentação encontrada para a busca."
+                        : "Nenhuma movimentação encontrada para os filtros selecionados."}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </>
+        )}
       </main>
     </div>
   );

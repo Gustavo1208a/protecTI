@@ -74,6 +74,17 @@ export default function Epis() {
     fetchEpis();
   }, []);
 
+  // Helper to format date as YYYY-MM-DD for date inputs
+  function formatDateForInput(dateStr: string | null | undefined): string {
+    if (!dateStr) return "";
+    // If already in YYYY-MM-DD format, return as is
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+    // Try to parse and format (handles Date objects, ISO strings, etc.)
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return "";
+    return date.toISOString().split("T")[0];
+  }
+
   function handleEditClick(epi: Epi) {
     setEditingId(epi.id_epi);
     setEditForm({
@@ -84,8 +95,8 @@ export default function Epis() {
       quantidadeInicial: epi.quantidade_estoque,
       quantidadeMinima: epi.quantidade_minima,
       lote: epi.lote || "",
-      dataFabricacao: epi.data_fabricacao || "",
-      dataValidade: epi.validade_ca || "",
+      dataFabricacao: formatDateForInput(epi.data_fabricacao),
+      dataValidade: formatDateForInput(epi.validade_ca),
       armario: epi.armario || "",
       compartimento: epi.compartimento,
     });

@@ -1,84 +1,128 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Package, Clock } from "lucide-react";
 import Sidebar from "@/components/Sidebar/Sidebar";
 import styles from "./dashboard.module.css";
 
-type StatCard = {
-  label: string;
-  value: string;
-  color: string;
+type Stats = {
+  totalFuncionarios: number;
+  totalEpis: number;
+  totalEmEstoque: number;
+  estoqueBaixo: number;
+  vencidos: number;
+  aVencer: number;
 };
 
-const STATS_DEFAULTS: StatCard[] = [
-  { label: "Total de funcionários", value: "0", color: "var(--yellow-1)" },
-  { label: "EPIs em estoque", value: "0", color: "var(--text-main)" },
-  { label: "Devoluções", value: "80", color: "#4ade80" },
-  { label: "Vencidos / A vencer", value: "1/1", color: "#f36a6a" },
-];
-
-type DayData = {
+type WeekData = {
   day: string;
   entregas: number;
   devolucoes: number;
 };
 
-const WEEK: DayData[] = [
-  { day: "Seg", entregas: 62, devolucoes: 18 },
-  { day: "Ter", entregas: 70, devolucoes: 24 },
-  { day: "Qua", entregas: 44, devolucoes: 15 },
-  { day: "Qui", entregas: 88, devolucoes: 28 },
-  { day: "Sex", entregas: 75, devolucoes: 22 },
-  { day: "Sáb", entregas: 34, devolucoes: 16 },
-];
-
-type Sector = {
+type Setor = {
   label: string;
   value: number;
 };
 
-const SECTORS: Sector[] = [
-  { label: "Produção", value: 138 },
-  { label: "Manutenção", value: 94 },
-  { label: "Logística", value: 61 },
-  { label: "Almoxarifado", value: 33 },
-  { label: "Segurança", value: 18 },
-];
-
-const MAX_SECTOR = Math.max(...SECTORS.map((s) => s.value));
-const MAX_BAR = Math.max(...WEEK.map((d) => d.entregas + d.devolucoes));
+type LastMovimentacao = {
+  id: number;
+  funcionario: string;
+  epi: string;
+  quantidade?: number;
+  estado?: string;
+  data: string;
+};
 
 export default function Dashboard() {
-  const [stats, setStats] = useState<StatCard[]>(STATS_DEFAULTS);
+  const [stats, setStats] = useState<Stats>({
+    totalFuncionarios: 0,
+    totalEpis: 0,
+    totalEmEstoque: 0,
+    estoqueBaixo: 0,
+    vencidos: 0,
+    aVencer: 0,
+  });
+  const [weekData, setWeekData] = useState<WeekData[]>([]);
+  const [setores, setSetores] = useState<Setor[]>([]);
+  const [ultimasEntregas, setUltimasEntregas] = useState<LastMovimentacao[]>([]);
+  const [ultimasDevolucoes, setUltimasDevolucoes] = useState<LastMovimentacao[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<"entregas" | "devolucoes">("entregas");
 
   useEffect(() => {
-    async function fetchFuncionariosCount() {
+    async function fetchDashboard() {
       try {
-        const res = await fetch('/api/funcionarios');
+        const res = await fetch("/api/dashboard");
         const data = await res.json();
-        if (res.ok && data.funcionarios) {
-          setStats(prev => prev.map(stat =>
-            stat.label === "Total de funcionários"
-              ? { ...stat, value: String(data.funcionarios.length) }
-              : stat
-          ));
+        if (res.ok) {
+          setStats(data.stats);
+          setWeekData(data.weekData);
+          setSetores(data.setores);
+          setUltimasEntregas(data.ultimasEntregas);
+          setUltimasDevolucoes(data.ultimasDevolucoes);
         }
-
-        const resEpis = await fetch('/api/epis');
-        const dataEpis = await resEpis.json();
-        if (resEpis.ok && dataEpis.epis) {
-          setStats(prev => prev.map(stat =>
-            stat.label === "EPIs em estoque"
-              ? { ...stat, value: String(dataEpis.epis.length) }
-              : stat
-          ));
-        }
-      } catch {
-        // Keep default value on error
+      } catch (error) {
+        console.error("Erro ao buscar dashboard:", error);
+      } finally {
+        setLoading(false);
       }
     }
-    fetchFuncionariosCount();
+    fetchDashboard();
   }, []);
+
+  // Formata data para exibição
+  function formatarData(iso: string) {
+    if (!iso) return "-";
+    const date = new Date(iso);
+    return date.toLocaleString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+
+  const maxBar = Math.max(...weekData.map((d) => d.entregas + d.devolucoes), 1);
+  const maxSetor = Math.max(...setores.map((s) => s.value), 1);
+
+  const statCards = [
+    {
+      label: "Funcionários Ativos",
+      value: stats.totalFuncionarios,
+      accentColor: "var(--yellow-1)",
+      detail: `${stats.totalFuncionarios} ativos no sistema`,
+      detailColor: "var(--text-muted)",
+    },
+    {
+      label: "EPIs Cadastrados",
+      value: stats.totalEpis,
+      accentColor: "#2fd066",
+      detail: `${stats.totalEmEstoque} unidades em estoque`,
+      detailColor: "var(--text-muted)",
+    },
+    {
+      label: "Estoque Baixo",
+      value: stats.estoqueBaixo,
+      accentColor: stats.estoqueBaixo > 0 ? "#f36a6a" : "#2fd066",
+      detail: stats.estoqueBaixo > 0
+        ? `${stats.estoqueBaixo} EPIs precisam de reposição`
+        : "Todos os itens acima do mínimo",
+      detailColor: stats.estoqueBaixo > 0 ? "#f36a6a" : "#2fd066",
+    },
+    {
+      label: "Validade do CA",
+      value: stats.vencidos + stats.aVencer,
+      accentColor: stats.vencidos > 0 ? "#f36a6a" : (stats.aVencer > 0 ? "var(--yellow-1)" : "#2fd066"),
+      detail: stats.vencidos > 0
+        ? `${stats.vencidos} vencidos, ${stats.aVencer} a vencer (30 dias)`
+        : stats.aVencer > 0
+        ? `${stats.aVencer} a vencer nos próximos 30 dias`
+        : "Todos os CAs válidos",
+      detailColor: stats.vencidos > 0 ? "#f36a6a" : (stats.aVencer > 0 ? "var(--yellow-1)" : "#2fd066"),
+    },
+  ];
 
   return (
     <div className={styles.page}>
@@ -87,74 +131,172 @@ export default function Dashboard() {
       <main className={styles.main}>
         <div className={styles.watermark} />
 
-        <h1 className={styles.title}>Visão Geral</h1>
+        <header className={styles.header}>
+          <div>
+            <h1 className={styles.title}>Dashboard</h1>
+            <p className={styles.subtitle}>Visão geral do controle de EPIs</p>
+          </div>
+        </header>
 
-        <section className={styles.statsGrid}>
-          {stats.map((stat) => (
-            <div className={styles.statCard} key={stat.label}>
-              <p className={styles.statLabel}>{stat.label}</p>
-              <p className={styles.statValue} style={{ color: stat.color }}>
-                {stat.value}
-              </p>
+        {/* Stats Grid */}
+        <section className={styles.statsGrid} aria-label="Estatísticas principais">
+          {statCards.map((card, i) => (
+            <div key={card.label} className={`${styles.statCard} ${loading ? styles.loading : ""}`}>
+              <div className={styles.statAccent} style={{ background: card.accentColor }} />
+              <div className={styles.statContent}>
+                <p className={styles.statLabel}>{card.label}</p>
+                <span className={styles.statValue} style={{ color: card.accentColor }}>
+                  {loading ? "—" : card.value}
+                </span>
+                <p className={styles.statDetail} style={{ color: card.detailColor }}>
+                  {loading ? "—" : card.detail}
+                </p>
+              </div>
             </div>
           ))}
         </section>
 
+        {/* Panels Grid */}
         <section className={styles.panelsGrid}>
+          {/* Chart Card */}
           <div className={styles.chartCard}>
-            <h2 className={styles.cardTitle}>Movimentação da semana</h2>
-            <p className={styles.cardSub}>Entregas e devoluções dos dias</p>
-
-            <div className={styles.chart}>
-              {WEEK.map(({ day, entregas, devolucoes }) => {
-                const totalPct = ((entregas + devolucoes) / MAX_BAR) * 100;
-                const entregasPct = (entregas / (entregas + devolucoes)) * 100;
-                const devolucoesPct = 100 - entregasPct;
-                return (
-                  <div className={styles.barGroup} key={day}>
-                    <div
-                      className={styles.barStack}
-                      style={{ height: `${totalPct}%` }}
-                    >
-                      <div
-                        className={styles.barDevolucoes}
-                        style={{ height: `${devolucoesPct}%` }}
-                      />
-                      <div
-                        className={styles.barEntregas}
-                        style={{ height: `${entregasPct}%` }}
-                      />
-                    </div>
-                    <span className={styles.barLabel}>{day}</span>
-                  </div>
-                );
-              })}
+            <div className={styles.cardHeader}>
+              <h2 className={styles.cardTitle}>Movimentação da Semana</h2>
+              <p className={styles.cardSub}>Entregas e devoluções dos últimos 7 dias</p>
             </div>
 
-            <div className={styles.legend}>
-              <span className={styles.legendItem}>
-                <span
-                  className={styles.legendDot}
-                  style={{ background: "var(--yellow-1)" }}
-                />
-                Entregas
-              </span>
-              <span className={styles.legendItem}>
-                <span
-                  className={styles.legendDot}
-                  style={{ background: "#f36a6a" }}
-                />
-                Devoluções
-              </span>
+            <div className={styles.chartWrapper}>
+              <div className={styles.chart} role="img" aria-label="Gráfico de barras de entregas e devoluções da semana">
+                {weekData.map(({ day, entregas, devolucoes }) => {
+                  const total = entregas + devolucoes;
+                  const totalPct = maxBar > 0 ? (total / maxBar) * 100 : 0;
+                  const entregasPct = total > 0 ? (entregas / total) * 100 : 0;
+                  const devolucoesPct = total > 0 ? (devolucoes / total) * 100 : 0;
+                  return (
+                    <div className={styles.barGroup} key={day}>
+                      <div className={styles.barArea}>
+                        <div
+                          className={styles.barStack}
+                          style={{ height: `${total > 0 ? Math.max(totalPct, 4) : 4}%` }}
+                          title={`${day}: ${entregas} entregas, ${devolucoes} devoluções`}
+                        >
+                          <div className={styles.barStackInner}>
+                            {entregas > 0 && (
+                              <div
+                                className={styles.barEntregas}
+                                style={{ height: `${entregasPct}%` }}
+                              />
+                            )}
+                            {devolucoes > 0 && (
+                              <div
+                                className={styles.barDevolucoes}
+                                style={{ height: `${devolucoesPct}%` }}
+                              />
+                            )}
+                            {total === 0 && (
+                              <div className={styles.barEmpty} style={{ height: "100%" }} />
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <span className={styles.barValue}>{total > 0 ? total : ""}</span>
+                      <span className={styles.barLabel}>{day}</span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className={styles.legend}>
+                <span className={styles.legendItem}>
+                  <span className={styles.legendDot} style={{ background: "var(--yellow-1)" }} />
+                  Entregas
+                </span>
+                <span className={styles.legendItem}>
+                  <span className={styles.legendDot} style={{ background: "#f36a6a" }} />
+                  Devoluções
+                </span>
+              </div>
             </div>
           </div>
 
-          <div className={styles.sectorCard}>
-            <h2 className={styles.cardTitle}>Consumo por setor</h2>
-            <p className={styles.cardSub}>EPIs retirados no período</p>
+          {/* Recent Activity Card */}
+          <div className={styles.activityCard}>
+            <div className={styles.cardHeader}>
+              <h2 className={styles.cardTitle}>Atividade Recente</h2>
+              <p className={styles.cardSub}>Últimas entregas e devoluções</p>
+            </div>
 
-            <div className={styles.sectorList}>
-              {SECTORS.map((sector) => (
+            <div className={styles.activityTabs}>
+              <button
+                className={`${styles.activityTab} ${activeTab === "entregas" ? styles.active : ""}`}
+                onClick={() => setActiveTab("entregas")}
+              >
+                <Package size={14} />
+                Entregas
+              </button>
+              <button
+                className={`${styles.activityTab} ${activeTab === "devolucoes" ? styles.active : ""}`}
+                onClick={() => setActiveTab("devolucoes")}
+              >
+                <Clock size={14} />
+                Devoluções
+              </button>
+            </div>
+
+            <div className={styles.activityList}>
+              {activeTab === "entregas" ? (
+                ultimasEntregas.length === 0 ? (
+                  <div className={styles.emptyState}>Nenhuma entrega registrada</div>
+                ) : (
+                  ultimasEntregas.map((item) => (
+                    <div key={item.id} className={styles.activityItem}>
+                      <div className={styles.activityInfo}>
+                        <span className={styles.activityEpi}>{item.epi}</span>
+                        <span className={styles.activityFunc}>{item.funcionario}</span>
+                      </div>
+                      <div className={styles.activityMeta}>
+                        <span className={styles.activityQty}>Qtd: {item.quantidade}</span>
+                        <span className={styles.activityTime}>{formatarData(item.data)}</span>
+                      </div>
+                    </div>
+                  ))
+                )
+              ) : (
+                ultimasDevolucoes.length === 0 ? (
+                  <div className={styles.emptyState}>Nenhuma devolução registrada</div>
+                ) : (
+                  ultimasDevolucoes.map((item) => (
+                    <div key={item.id} className={styles.activityItem}>
+                      <div className={styles.activityInfo}>
+                        <span className={styles.activityEpi}>{item.epi}</span>
+                        <span className={styles.activityFunc}>{item.funcionario}</span>
+                      </div>
+                      <div className={styles.activityMeta}>
+                        <span className={`${styles.activityEstado} ${styles[item.estado?.toLowerCase() || "bom"]}`}>
+                          {item.estado}
+                        </span>
+                        <span className={styles.activityTime}>{formatarData(item.data)}</span>
+                      </div>
+                    </div>
+                  ))
+                )
+              )}
+            </div>
+          </div>
+        </section>
+
+        {/* Sectors Card - Full Width */}
+        <section className={styles.sectorsCard}>
+          <div className={styles.cardHeader}>
+            <h2 className={styles.cardTitle}>Consumo por Setor</h2>
+            <p className={styles.cardSub}>EPIs retirados no período</p>
+          </div>
+
+          <div className={styles.sectorList}>
+            {setores.length === 0 ? (
+              <div className={styles.emptyState}>Nenhum dado de setor disponível</div>
+            ) : (
+              setores.map((sector) => (
                 <div className={styles.sectorRow} key={sector.label}>
                   <div className={styles.sectorHeader}>
                     <span className={styles.sectorLabel}>{sector.label}</span>
@@ -163,14 +305,12 @@ export default function Dashboard() {
                   <div className={styles.sectorTrack}>
                     <div
                       className={styles.sectorFill}
-                      style={{
-                        width: `${(sector.value / MAX_SECTOR) * 100}%`,
-                      }}
+                      style={{ width: `${(sector.value / maxSetor) * 100}%` }}
                     />
                   </div>
                 </div>
-              ))}
-            </div>
+              ))
+            )}
           </div>
         </section>
       </main>

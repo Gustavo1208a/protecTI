@@ -52,6 +52,8 @@ export default function Entrega() {
   const [epis, setEpis] = useState<EpiEntrega[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [searchFunc, setSearchFunc] = useState("");
+  const [searchEpi, setSearchEpi] = useState("");
 
   const stepIndex = STEPS.findIndex((s) => s.key === step);
 
@@ -192,28 +194,55 @@ export default function Entrega() {
 
         {step === "funcionarios" && (
           <div className={styles.cards}>
+            <div className={styles.searchInput}>
+              <input
+                type="text"
+                placeholder="Buscar funcionário por nome, matrícula ou setor..."
+                value={searchFunc}
+                onChange={(e) => setSearchFunc(e.target.value)}
+              />
+            </div>
             {funcionarios.length === 0 && !loading ? (
               <div className={styles.emptyState}>Nenhum funcionário ativo cadastrado</div>
             ) : (
-              funcionarios.map((f) => (
-                <button
-                  key={f.id}
-                  type="button"
-                  className={styles.card}
-                  onClick={() => escolherFuncionario(f)}
-                >
-                  <span className={styles.cardName}>{f.nome}</span>
-                  <span className={styles.cardTag}>{SETOR_ENTREGA[f.id] ?? f.setor ?? "-"}</span>
-                  <span className={styles.cardRole}>{f.cargo ?? "-"}</span>
-                  <span className={styles.cardMeta}>Cadastro {f.matricula}</span>
-                </button>
-              ))
+              funcionarios
+                .filter((f) => {
+                  const q = searchFunc.trim().toLowerCase();
+                  if (!q) return true;
+                  return (
+                    f.nome.toLowerCase().includes(q) ||
+                    f.matricula.toLowerCase().includes(q) ||
+                    (f.setor && f.setor.toLowerCase().includes(q)) ||
+                    (f.cargo && f.cargo.toLowerCase().includes(q))
+                  );
+                })
+                .map((f) => (
+                  <button
+                    key={f.id}
+                    type="button"
+                    className={styles.card}
+                    onClick={() => escolherFuncionario(f)}
+                  >
+                    <span className={styles.cardName}>{f.nome}</span>
+                    <span className={styles.cardTag}>{SETOR_ENTREGA[f.id] ?? f.setor ?? "-"}</span>
+                    <span className={styles.cardRole}>{f.cargo ?? "-"}</span>
+                    <span className={styles.cardMeta}>Cadastro {f.matricula}</span>
+                  </button>
+                ))
             )}
           </div>
         )}
 
         {step === "epis" && (
           <div className={styles.cards}>
+            <div className={styles.searchInput}>
+              <input
+                type="text"
+                placeholder="Buscar EPI por nome, CA, categoria..."
+                value={searchEpi}
+                onChange={(e) => setSearchEpi(e.target.value)}
+              />
+            </div>
             {loading ? (
               Array.from({ length: 6 }).map((_, i) => (
                 <div key={i} className={`${styles.card} ${styles.skeletonCard}`}>
@@ -225,6 +254,14 @@ export default function Entrega() {
             ) : (
               epis
                 .filter((e) => e.quantidade_estoque > 0)
+                .filter((e) => {
+                  const q = searchEpi.trim().toLowerCase();
+                  if (!q) return true;
+                  return (
+                    e.nome.toLowerCase().includes(q) ||
+                    (e.categoria && e.categoria.toLowerCase().includes(q))
+                  );
+                })
                 .map((e) => {
                   const vencido = Boolean(e.validade_ca && new Date(e.validade_ca) < new Date());
                   const estoqueBaixo = e.quantidade_estoque <= e.quantidade_minima && e.quantidade_minima > 0;
@@ -270,6 +307,16 @@ export default function Entrega() {
             )}
             {epis.length > 0 && epis.filter((e) => e.quantidade_estoque > 0).length === 0 && !loading && (
               <div className={styles.emptyState}>Nenhum EPI disponível em estoque</div>
+            )}
+            {epis.length > 0 && searchEpi.trim() && epis.filter((e) => e.quantidade_estoque > 0).filter((e) => {
+                  const q = searchEpi.trim().toLowerCase();
+                  if (!q) return true;
+                  return (
+                    e.nome.toLowerCase().includes(q) ||
+                    (e.categoria && e.categoria.toLowerCase().includes(q))
+                  );
+                }).length === 0 && !loading && (
+              <div className={styles.emptyState}>Nenhum EPI encontrado com esse termo</div>
             )}
           </div>
         )}

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { verifyTokenEdge, getTokenFromHeader } from '@/lib/auth-edge';
 
-const publicPaths = ['/login', '/api/auth/login', '/api/auth/register', '/api/auth/me', '/api/funcionarios', '/funcionarios', '/dashboard'];
+const publicPaths = ['/login', '/api/auth/login', '/api/auth/register', '/api/auth/me', '/api/funcionarios', '/funcionarios', '/dashboard', '/api/arduino/auth'];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;

@@ -107,10 +107,12 @@ CREATE TABLE IF NOT EXISTS movimentacao_estoque (
 
 CREATE TABLE IF NOT EXISTS alertas (
   id_alerta INT AUTO_INCREMENT PRIMARY KEY,
+  alerta_key VARCHAR(100) NOT NULL UNIQUE COMMENT 'Chave única do alerta (ex: AL-CA-1, AL-EST-2)',
   tipo ENUM('vencimento_ca', 'estoque_baixo', 'devolucao_pendente') NOT NULL,
   mensagem TEXT NOT NULL,
   lido BOOLEAN DEFAULT FALSE,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uk_alerta_key (alerta_key)
 );
 
 -- ============================================
