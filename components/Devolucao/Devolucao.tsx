@@ -527,7 +527,6 @@ export default function Devolucao() {
           <div className={styles.tableCard}>
             {devolucoes.length === 0 ? (
               <div className={styles.emptyStateCard} style={{ padding: "48px 24px" }}>
-                <Package size={48} className={styles.emptyIconLarge} />
                 <h3>Nenhuma devolução registrada</h3>
                 <p>As devoluções realizadas aparecerão aqui automaticamente.</p>
               </div>
