@@ -22,7 +22,6 @@ export async function GET(
         { status: 404 }
       );
     }
-
     const f = funcionarios[0];
 
     // Fetch movimentações (entregas + devoluções)
@@ -80,13 +79,13 @@ export async function GET(
       [id, id]
     );
 
-    const epiEmPosse = (epiEmPosseResult as any[]).reduce((sum, r) => sum + (r.qtd || 0), 0);
+    const epiEmPosse = (epiEmPosseResult as any[]).reduce((sum, r) => sum + (Number(r.qtd) || 0), 0);
 
     const [retiradasResult] = await pool.execute(
       `SELECT COALESCE(SUM(quantidade), 0) as total FROM entrega_epi WHERE id_func = ?`,
       [id]
     );
-    const retiradasNoAno = (retiradasResult as any[])[0]?.total || 0;
+    const retiradasNoAno = Number((retiradasResult as any[])[0]?.total) || 0;
 
     const [devolucoesTotalResult] = await pool.execute(
       `SELECT COALESCE(SUM(e.quantidade), 0) as total
@@ -95,7 +94,7 @@ export async function GET(
        WHERE e.id_func = ?`,
       [id]
     );
-    const devolucoesTotal = (devolucoesTotalResult as any[])[0]?.total || 0;
+    const devolucoesTotal = Number((devolucoesTotalResult as any[])[0]?.total) || 0;
 
     const [pendenciasResult] = await pool.execute(
       `SELECT COALESCE(COUNT(*), 0) as total
@@ -106,7 +105,7 @@ export async function GET(
        )`,
       [id]
     );
-    const pendencias = (pendenciasResult as any[])[0]?.total || 0;
+    const pendencias = Number((pendenciasResult as any[])[0]?.total) || 0;
 
     return NextResponse.json({
       funcionario: {

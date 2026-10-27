@@ -572,9 +572,8 @@
 }
 
 .pendenteItem:hover {
-  border-color: var(--yellow-1);
-  background: rgba(242, 169, 12, 0.05);
-  transform: translateX(2px);
+  border-color: var(--yellow-2);
+  background: rgba(255, 255, 255, 0.03);
 }
 
 .pendenteItem.selected {

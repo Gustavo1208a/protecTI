@@ -159,13 +159,25 @@ export default function Epis() {
     );
   }, [query, epis]);
 
-  function getStatus(epi: Epi) {
+    function getStatus(epi: Epi) {
+    if (epi.validade_ca) {
+      const validade = new Date(epi.validade_ca);
+      const hoje = new Date();
+      validade.setHours(0, 0, 0, 0);
+      hoje.setHours(0, 0, 0, 0);
+
+      if (validade < hoje) {
+        return "Vencido";
+      }
+    }
+
     if (
       epi.quantidade_estoque <= epi.quantidade_minima &&
       epi.quantidade_minima > 0
     ) {
       return "Estoque baixo";
     }
+
     return "Disponível";
   }
 
@@ -413,11 +425,10 @@ export default function Epis() {
                     </span>
                     <span className={styles.statusCol}>
                       <span
-                        className={`${styles.badge} ${
-                          getStatus(e) === "Disponível"
+                        className={`${styles.badge} ${getStatus(e) === "Disponível"
                             ? styles.badgeDisponivel
                             : styles.badgeBaixo
-                        }`}
+                          }`}
                       >
                         {getStatus(e)}
                       </span>

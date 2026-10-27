@@ -491,28 +491,20 @@ export default function Devolucao() {
             <div className={styles.pendentesScroll}>
               <ul className={styles.pendentesList}>
                 {filteredPendentes.map((p) => (
-                  <li
+<li
                     key={p.id}
                     className={styles.pendenteItem}
                     onClick={() => setSelectedItem(p)}
                   >
                     <div className={styles.pendenteContent}>
-                      <div className={styles.pendenteIcon}>
-                        <Package size={20} />
-                      </div>
                       <div>
                         <p className={styles.pendenteNome}>{p.epi}</p>
                         <p className={styles.pendenteMeta}>
-                          <User size={12} className={styles.metaIcon} /> {p.funcionario}
-                          <span className={styles.metaSeparator}>&middot;</span>
-                          <Clock size={12} className={styles.metaIcon} /> Retirado em {p.retiradoEm}
-                          <span className={styles.metaSeparator}>&middot;</span>
-                          <span className={styles.metaBadge}>Pendente: {p.qtdPendente}</span>
+                          {p.funcionario} &middot; Retirado em {p.retiradoEm} &middot; Pendente: {p.qtdPendente}
                         </p>
                       </div>
                     </div>
                     <div className={styles.pendenteActions}>
-                      <span className={styles.badgeAtivo}>Ativo</span>
                       <button
                         className={styles.itemActionBtn}
                         onClick={(e) => { e.stopPropagation(); setSelectedItem(p); }}

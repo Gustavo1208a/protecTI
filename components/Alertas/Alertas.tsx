@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Bell, Loader2, AlertTriangle, Shield, Package, Clock, Check, CheckCircle2, Eye, EyeOff } from "lucide-react";
+import { Bell, AlertTriangle, Shield, Package, Clock } from "lucide-react";
 import Sidebar from "@/components/Sidebar/Sidebar";
 import styles from "./alertas.module.css";
 
@@ -14,24 +14,6 @@ type Alerta = {
   prioridade: Prioridade;
   categoria: string;
   lido: boolean;
-};
-
-const PRIORIDADE_CLASS: Record<Prioridade, string> = {
-  Alta: styles.badgeAlta,
-  Média: styles.badgeMedia,
-  Baixa: styles.badgeBaixa,
-};
-
-const PRIORIDADE_ICON: Record<Prioridade, React.ReactNode> = {
-  Alta: <AlertTriangle size={14} strokeWidth={2.5} className={styles.prioridadeIconAlta} />,
-  Média: <Clock size={14} strokeWidth={2.5} className={styles.prioridadeIconMedia} />,
-  Baixa: <Shield size={14} strokeWidth={2.5} className={styles.prioridadeIconBaixa} />,
-};
-
-const ICONE_CATEGORIA: Record<string, React.ReactNode> = {
-  vencimento_ca: <AlertTriangle size={14} strokeWidth={2} className={styles.categoriaIcon} />,
-  estoque_baixo: <Package size={14} strokeWidth={2} className={styles.categoriaIcon} />,
-  devolucao_pendente: <Clock size={14} strokeWidth={2} className={styles.categoriaIcon} />,
 };
 
 // Skeleton components
@@ -211,8 +193,7 @@ export default function Alertas() {
 
             <div className={styles.toolbar}>
               <h2 className={styles.sectionTitle}>
-                <Bell size={18} strokeWidth={2} className={styles.sectionIcon} />
-                Lista de alertas {totalLidos > 0 && <span className={styles.badgeContagem}>{totalLidos} lidos</span>}
+                Lista de alertas
               </h2>
               <label className={styles.toggleLidos}>
                 <input
@@ -237,7 +218,6 @@ export default function Alertas() {
 
                 {alertasFiltrados.length === 0 ? (
                   <div className={styles.emptyState}>
-                    <Shield size={32} strokeWidth={2} className={styles.emptyIcon} />
                     <p>{mostrarLidos || totalLidos === 0 ? "Nenhum alerta no momento" : "Todos os alertas foram lidos"}</p>
                     <span>{mostrarLidos || totalLidos === 0 ? "Tudo funcionando normalmente ✓" : "Desmarque \"Mostrar lidos\" para ver os alertas lidos"}</span>
                   </div>
@@ -251,24 +231,24 @@ export default function Alertas() {
                         onClick={() => marcarComoLido([a.id], !a.lido)}
                         style={{ cursor: "pointer" }}
                       >
-                        <span className={styles.idCell}>{a.id}</span>
-                        <span className={styles.tipoCell}>
-                          {ICONE_CATEGORIA[a.categoria] || <Package size={14} strokeWidth={2} className={styles.categoriaIcon} />}
-                          {a.tipo}
-                        </span>
+                        <span className={styles.idCell} title={a.id}>{a.id}</span>
+                        <span className={styles.tipoCell}>{a.tipo}</span>
                         <span className={styles.itemCell}>{a.item}</span>
                         <span>
-                          <span className={`${styles.badge} ${PRIORIDADE_CLASS[a.prioridade]}`}>
-                            {PRIORIDADE_ICON[a.prioridade]}
+                          <span
+                            className={`${styles.badge} ${a.prioridade === "Alta"
+                                ? styles.badgeAlta
+                                : a.prioridade === "Média"
+                                  ? styles.badgeMedia
+                                  : styles.badgeBaixa
+                              }`}
+                          >
                             {a.prioridade}
                           </span>
                         </span>
                         <span className={styles.statusCell}>
                           {a.lido ? (
-                            <span className={styles.statusLido}>
-                              <CheckCircle2 size={14} strokeWidth={2.5} className={styles.checkIcon} />
-                              Lido
-                            </span>
+                            <span className={styles.statusLido}>Lido</span>
                           ) : (
                             <span className={styles.statusNaoLido}>
                               <span className={styles.pulseDot} />

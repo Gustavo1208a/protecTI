@@ -154,7 +154,8 @@
     z-index: 1;
     border: 1px solid var(--yellow-2);
     border-radius: 12px;
-    overflow: hidden;
+    overflow: auto;
+    max-height: 320px;
     margin-bottom: 28px;
 }
 
@@ -316,3 +317,5 @@
         max-width: none;
     }
 }
+.editInput { flex: 1; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; color: var(--text-main); padding: 6px 10px; font-size: 14px; font-family: inherit; }
+.editInput:focus { outline: none; border-color: var(--yellow-1); }

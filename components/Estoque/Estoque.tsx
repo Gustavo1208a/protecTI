@@ -273,18 +273,20 @@ export default function Estoque() {
                   type="datetime-local"
                   value={entrada.dataEntrada}
                   onChange={(e) => updateEntrada("dataEntrada", e.target.value)}
-                  disabled={submitting}
-                />
-              </div>
-              <div className={styles.field}>
-                <label htmlFor="ent-validade">Validade</label>
-                <input
-                  id="ent-validade"
-                  type="date"
-                  value={entrada.validade}
-                  onChange={(e) => updateEntrada("validade", e.target.value)}
-                  disabled={submitting}
-                />
+                   disabled={submitting}
+                   style={{ colorScheme: "dark" }}
+                 />
+               </div>
+               <div className={styles.field}>
+                 <label htmlFor="ent-validade">Validade</label>
+                 <input
+                   id="ent-validade"
+                   type="date"
+                   value={entrada.validade}
+                   onChange={(e) => updateEntrada("validade", e.target.value)}
+                   disabled={submitting}
+                   style={{ colorScheme: "dark" }}
+                 />
               </div>
             </div>
 
