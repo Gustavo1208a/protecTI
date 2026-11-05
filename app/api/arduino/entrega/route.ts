@@ -37,6 +37,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Matrícula ou senha inválidos' }, { status: 401 });
     }
 
+    console.log('t3sasdasd')
     const conn = await pool.getConnection();
     try {
       await conn.beginTransaction();
