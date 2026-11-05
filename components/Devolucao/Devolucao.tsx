@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CheckCircle2, Loader2, AlertCircle, ChevronDown, X, Package, User, Clock, AlertTriangle, Search, RotateCcw } from "lucide-react";
+import { CheckCircle2, Loader2, AlertCircle, ChevronDown, X, Package, User, Clock, Search, RotateCcw } from "lucide-react";
 import Sidebar from "@/components/Sidebar/Sidebar";
 import styles from "./devolucao.module.css";
 
@@ -176,7 +176,6 @@ function DevolucaoModal({
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.modalHeader}>
           <h3 id="modal-title" className={styles.modalTitle}>
-            <Package size={20} className={styles.modalIcon} />
             Registrar devolução
           </h3>
           <button className={styles.modalClose} onClick={onClose} aria-label="Fechar">
@@ -479,7 +478,6 @@ export default function Devolucao() {
 
           {filteredPendentes.length === 0 ? (
             <div className={styles.emptyStateCard}>
-              <Package size={48} className={styles.emptyIconLarge} />
               <h3>{pendentes.length === 0 ? "Nenhum EPI pendente" : "Nenhum resultado encontrado"}</h3>
               <p>
                 {pendentes.length === 0

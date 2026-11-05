@@ -64,8 +64,8 @@
 
 .title {
   margin: 0;
-  font-size: 40px;
-  font-weight: 800;
+  font-size: 24px;
+  font-weight: 600;
   color: var(--text-main);
   letter-spacing: -0.4px;
   line-height: 1.05;

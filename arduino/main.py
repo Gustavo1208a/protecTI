@@ -6,10 +6,13 @@ from getpass import getpass
 PORTA_ARDUINO = "COM3"
 BAUD_RATE = 9600
 
-API_URL = "http://localhost:3000/api/arduino/auth"
+API_URL_ENTREGA = "http://localhost:3000/api/arduino/entrega"
 
 ARMARIO = 1
 COMPARTIMENTO = "A1"
+ID_EPI = 1
+QUANTIDADE = 1
+OBSERVACAO = "Retirada via armario Arduino"
 
 def main():
     try:
@@ -45,17 +48,20 @@ def main():
                     continue
 
                 try:
-                    dados = {
+                    dados_entrega = {
                         "matricula": matricula,
                         "senha": senha,
                         "armario": ARMARIO,
-                        "compartimento": COMPARTIMENTO
+                        "compartimento": COMPARTIMENTO,
+                        "id_epi": ID_EPI,
+                        "quantidade": QUANTIDADE,
+                        "observacao": OBSERVACAO,
                     }
 
                     resposta = requests.post(
-                        API_URL,
-                        json=dados,
-                        timeout=10
+                        API_URL_ENTREGA,
+                        json=dados_entrega,
+                        timeout=10,
                     )
 
                     try:
@@ -63,20 +69,13 @@ def main():
                     except ValueError:
                         resultado = {}
 
-                    autorizado = (
-                        resposta.ok
-                        and resultado.get("autorizado") is True
-                    )
-
-                    if autorizado:
+                    if resposta.ok and resultado.get("autorizado") is True:
                         arduino.write(b"LIBERADO\n")
                         arduino.flush()
-                        print("Retirada autorizada!")
+                        print("Retirada autorizada e registrada no sistema!")
                         print(f"   Funcionario: {resultado['funcionario']['nome']} (Matricula: {resultado['funcionario']['matricula']})")
                         print(f"   Armario: {ARMARIO} | Compartimento: {COMPARTIMENTO}")
-                        print(f"   EPIs disponiveis: {'Sim' if resultado['tem_epis_disponiveis'] else 'Nao'}")
                         print("   Armario liberado por 5 segundos.")
-
                     else:
                         arduino.write(b"NEGADO\n")
                         arduino.flush()

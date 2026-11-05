@@ -133,8 +133,8 @@ export default function Dashboard() {
 
         <header className={styles.header}>
           <div>
+            <p className={styles.eyebrow}>Controle de EPIs</p>
             <h1 className={styles.title}>Dashboard</h1>
-            <p className={styles.subtitle}>Visão geral do controle de EPIs</p>
           </div>
         </header>
 

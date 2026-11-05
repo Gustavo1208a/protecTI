@@ -263,7 +263,7 @@ export default function Relatorios() {
           <button
             type="button"
             className={styles.exportBtn}
-            onClick={() => exportarCsv(linhasFiltradas)}
+            onClick={() => exportarCsv(linhasComBusca)}
             disabled={loading || linhasFiltradas.length === 0}
           >
             <Download size={16} strokeWidth={2} />
