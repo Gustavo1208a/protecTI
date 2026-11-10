@@ -150,17 +150,19 @@ function DevolucaoModal({
 }) {
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
 
-  if (!item) return null;
-
-  // Initialize form when item changes
-  if (!form.id_entrega) {
+  // Reinitialize form whenever the selected item changes so the submitted
+  // id_entrega/quantidade always match the opened EPI, without requiring a page reload.
+  useEffect(() => {
+    if (!item) return;
     setForm({
       id_entrega: String(item.id_entrega),
       estado: "Bom estado",
       observacao: "",
       quantidade: String(item.qtdPendente),
     });
-  }
+  }, [item]);
+
+  if (!item) return null;
 
   function update<K extends keyof FormState>(key: K, value: string) {
     setForm((f) => ({ ...f, [key]: value }));

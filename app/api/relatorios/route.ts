@@ -29,8 +29,8 @@ export async function GET(request: NextRequest) {
           params.push(setor);
         }
         if (funcionario && funcionario !== 'TODOS' && nomeCol) {
-          conditions.push(`${nomeCol} = ?`);
-          params.push(funcionario);
+          conditions.push(`${nomeCol} LIKE ?`);
+          params.push(`%${funcionario}%`);
         }
 
         return { clause: conditions.length > 0 ? 'WHERE ' + conditions.join(' AND ') : '', params };
@@ -48,10 +48,12 @@ export async function GET(request: NextRequest) {
         `SELECT
           CONCAT('MV-', LPAD(e.id_entrega, 4, '0')) as id,
           f.nome as funcionario,
+          f.matricula as matricula,
+          f.setor as setor,
           e.quantidade,
           'Entrega' as acao,
           DATE_FORMAT(e.data_entrega, '%d/%m/%Y %H:%i') as data,
-          'entrega' as tipo
+          e.lote
         FROM entrega_epi e
         JOIN funcionario f ON e.id_func = f.id_func
         ${whereEntregas}
@@ -61,10 +63,12 @@ export async function GET(request: NextRequest) {
         SELECT
           CONCAT('MV-', LPAD(d.id_devolucao, 4, '0')) as id,
           f.nome as funcionario,
+          f.matricula as matricula,
+          f.setor as setor,
           e.quantidade as quantidade,
           'Devolução' as acao,
           DATE_FORMAT(d.data_devolucao, '%d/%m/%Y %H:%i') as data,
-          'devolucao' as tipo
+          e.lote
         FROM devolucao_epi d
         JOIN entrega_epi e ON d.id_entrega = e.id_entrega
         JOIN funcionario f ON e.id_func = f.id_func
@@ -74,11 +78,13 @@ export async function GET(request: NextRequest) {
 
         SELECT
           CONCAT('MV-', LPAD(m.id_movimentacao, 4, '0')) as id,
-          'Estoque' as funcionario,
+          NULL as funcionario,
+          NULL as matricula,
+          NULL as setor,
           m.quantidade,
           CASE m.tipo WHEN 'entrada' THEN 'Entrada' ELSE 'Saída' END as acao,
           DATE_FORMAT(m.data_movimentacao, '%d/%m/%Y %H:%i') as data,
-          'estoque' as tipo
+          m.lote
         FROM movimentacao_estoque m
         ${whereEstoque}
 
@@ -121,9 +127,12 @@ export async function GET(request: NextRequest) {
         movimentacoes: (movRows as any[]).map(r => ({
           id: r.id,
           funcionario: r.funcionario,
+          matricula: r.matricula || null,
+          setor: r.setor || null,
           quantidade: Number(r.quantidade),
           acao: r.acao,
           data: r.data,
+          lote: r.lote || null,
         })),
         resumo: {
           entregas: (resumoEntregas as any[])[0]?.total || 0,

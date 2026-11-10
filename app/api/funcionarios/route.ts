@@ -2,11 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import { hashPassword } from '@/lib/auth';
 
-const PERFIL_TO_PERMISSAO: Record<string, number> = {
+const PERFIL_TO_ID_CARGO: Record<string, number> = {
   'Funcionário': 1,
   'Almoxarife': 2,
-  'Técnico de Segurança': 2,
   'Administrador': 3,
+  'Técnico de Segurança': 4,
 };
 
 export async function POST(request: NextRequest) {
@@ -72,13 +72,13 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        const permissao = PERFIL_TO_PERMISSAO[perfil] || 1;
+        const id_cargo = PERFIL_TO_ID_CARGO[perfil] || 1;
         const hashedPassword = await hashPassword(senha);
 
         await connection.execute(
-          `INSERT INTO usuario (id_usuario, nome, senha, permissao, id_cargo, acesso_site)
-           VALUES (?, ?, ?, ?, NULL, ?)`,
-          [matricula, nome, hashedPassword, permissao, temAcesso]
+          `INSERT INTO usuario (id_usuario, nome, senha, id_cargo, acesso_site)
+           VALUES (?, ?, ?, ?, ?)`,
+          [matricula, nome, hashedPassword, id_cargo, temAcesso]
         );
       }
 

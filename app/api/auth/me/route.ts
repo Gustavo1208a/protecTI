@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     }
 
     const [rows] = await pool.execute(
-      `SELECT u.id_usuario, u.nome, u.permissao, u.acesso_site, c.nome as cargo
+      `SELECT u.id_usuario, u.nome, u.id_cargo, u.acesso_site, c.nome as cargo
        FROM usuario u
        LEFT JOIN cargo c ON u.id_cargo = c.id_cargo
        WHERE u.id_usuario = ?`,
@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
       user: {
         id: user.id_usuario,
         nome: user.nome,
-        permissao: user.permissao,
+        id_cargo: user.id_cargo,
         cargo: user.cargo,
         acesso_site: user.acesso_site,
       },

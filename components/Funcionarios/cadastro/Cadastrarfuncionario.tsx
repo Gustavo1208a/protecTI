@@ -32,15 +32,23 @@ export default function CadastrarFuncionario() {
     perfil: PERFIS[0],
     status: STATUS_OPTS[0],
     senha: "",
-    temAcesso: false,
+    temAcesso: PERFIS[0] !== "Funcionário",
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const router = useRouter();
 
+  const temAcessoDisabled = form.perfil === "Funcionário";
+
   function update<K extends keyof typeof form>(key: K, value: string | boolean) {
-    setForm((f) => ({ ...f, [key]: value }));
+    setForm((f) => {
+      const next = { ...f, [key]: value };
+      if (key === "perfil") {
+        next.temAcesso = value !== "Funcionário";
+      }
+      return next;
+    });
     if (error) setError(null);
   }
 
@@ -55,7 +63,7 @@ export default function CadastrarFuncionario() {
       perfil: PERFIS[0],
       status: STATUS_OPTS[0],
       senha: "",
-      temAcesso: false,
+      temAcesso: PERFIS[0] !== "Funcionário",
     });
     setSuccess(false);
     setError(null);
@@ -261,7 +269,7 @@ export default function CadastrarFuncionario() {
                   type="checkbox"
                   checked={form.temAcesso}
                   onChange={(e) => update("temAcesso", e.target.checked)}
-                  disabled={loading || success}
+                  disabled={temAcessoDisabled || loading || success}
                   className={styles.toggleInput}
                 />
                 <span className={styles.toggleTrack}>

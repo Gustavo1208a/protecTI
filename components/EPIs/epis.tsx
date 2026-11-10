@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Search, Plus, Edit, Trash2, AlertCircle, CheckCircle } from "lucide-react";
+import { Search, Plus, Edit, Trash2, AlertCircle, CheckCircle, Calendar } from "lucide-react";
 import Sidebar from "@/components/Sidebar/Sidebar";
 import styles from "./epis.module.css";
 
@@ -17,10 +17,19 @@ const CATEGORIAS = [
 
 const ARMARIOS = ["Armário 01", "Armário 02", "Armário 03"];
 
+type EpiLote = {
+  id_lote: number;
+  lote: string;
+  quantidade: number;
+  quantidade_disponivel: number;
+  data_fabricacao: string | null;
+  data_validade: string | null;
+  criado_em: string | null;
+};
+
 type Epi = {
   id_epi: number;
   nome: string;
-  ca: string;
   descricao: string | null;
   validade_ca: string | null;
   quantidade_estoque: number;
@@ -31,18 +40,15 @@ type Epi = {
   data_fabricacao: string | null;
   armario: string | null;
   compartimento: string;
+  lotes: EpiLote[];
 };
 
 type EditForm = {
   nome: string;
-  numeroCa: string;
   categoria: string;
   tamanho: string;
   quantidadeInicial: number;
   quantidadeMinima: number;
-  lote: string;
-  dataFabricacao: string;
-  dataValidade: string;
   armario: string;
   compartimento: string;
 };
@@ -54,14 +60,35 @@ export default function Epis() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<Partial<EditForm>>({});
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  async function fetchLotes(id_epi: number) {
+    try {
+      const res = await fetch(`/api/epis/${id_epi}/lotes`);
+      if (res.ok) {
+        const data = await res.json();
+        return data.lotes ?? [];
+      }
+      return [];
+    } catch (error) {
+      console.error("Erro ao buscar lotes:", error);
+      return [];
+    }
+  }
 
   async function fetchEpis() {
     try {
       const res = await fetch("/api/epis");
       const data = await res.json();
       if (res.ok && data.epis) {
-        setEpis(data.epis);
+        const episComLotes = await Promise.all(
+          (data.epis as any[]).map(async (e) => {
+            const lotes = await fetchLotes(e.id_epi);
+            return { ...e, lotes } as Epi;
+          })
+        );
+        setEpis(episComLotes);
       }
     } catch (error) {
       console.error("Erro ao buscar EPIs:", error);
@@ -74,29 +101,25 @@ export default function Epis() {
     fetchEpis();
   }, []);
 
-  // Helper to format date as YYYY-MM-DD for date inputs
-  function formatDateForInput(dateStr: string | null | undefined): string {
+  // Formata data ISO (ex: 2040-02-11T03:00:00.000Z) para DD/MM/YYYY
+  function formatDateDisplay(dateStr: string | null | undefined): string {
     if (!dateStr) return "";
-    // If already in YYYY-MM-DD format, return as is
-    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
-    // Try to parse and format (handles Date objects, ISO strings, etc.)
     const date = new Date(dateStr);
     if (isNaN(date.getTime())) return "";
-    return date.toISOString().split("T")[0];
+    const dia = String(date.getUTCDate()).padStart(2, "0");
+    const mes = String(date.getUTCMonth() + 1).padStart(2, "0");
+    const ano = date.getUTCFullYear();
+    return `${dia}/${mes}/${ano}`;
   }
 
   function handleEditClick(epi: Epi) {
     setEditingId(epi.id_epi);
     setEditForm({
       nome: epi.nome,
-      numeroCa: epi.ca,
       categoria: epi.categoria || "",
       tamanho: epi.tamanho || "",
       quantidadeInicial: epi.quantidade_estoque,
       quantidadeMinima: epi.quantidade_minima,
-      lote: epi.lote || "",
-      dataFabricacao: formatDateForInput(epi.data_fabricacao),
-      dataValidade: formatDateForInput(epi.validade_ca),
       armario: epi.armario || "",
       compartimento: epi.compartimento,
     });
@@ -153,7 +176,6 @@ export default function Epis() {
     return epis.filter(
       (e) =>
         e.nome.toLowerCase().includes(q) ||
-        e.ca.toLowerCase().includes(q) ||
         e.compartimento.toLowerCase().includes(q) ||
         (e.categoria && e.categoria.toLowerCase().includes(q))
     );
@@ -303,15 +325,6 @@ export default function Epis() {
                             />
                           </div>
                           <div className={styles.editField}>
-                            <label>Número do CA</label>
-                            <input
-                              type="text"
-                              value={editForm.numeroCa || ""}
-                              onChange={(ev) => setEditForm({ ...editForm, numeroCa: ev.target.value })}
-                              required
-                            />
-                          </div>
-                          <div className={styles.editField}>
                             <label>Categoria</label>
                             <select
                               value={editForm.categoria || CATEGORIAS[0]}
@@ -354,36 +367,6 @@ export default function Epis() {
                               onChange={(ev) => setEditForm({ ...editForm, quantidadeMinima: parseInt(ev.target.value) || 0 })}
                             />
                           </div>
-                          <div className={styles.editField}>
-                            <label>Lote</label>
-                            <input
-                              type="text"
-                              value={editForm.lote || ""}
-                              onChange={(ev) => setEditForm({ ...editForm, lote: ev.target.value })}
-                            />
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className={styles.editSection}>
-                        <h4 className={styles.editSectionTitle}>Datas</h4>
-                        <div className={styles.editGrid}>
-                          <div className={styles.editField}>
-                            <label>Data de Fabricação</label>
-                            <input
-                              type="date"
-                              value={editForm.dataFabricacao || ""}
-                              onChange={(ev) => setEditForm({ ...editForm, dataFabricacao: ev.target.value })}
-                            />
-                          </div>
-                          <div className={styles.editField}>
-                            <label>Data de Validade do CA</label>
-                            <input
-                              type="date"
-                              value={editForm.dataValidade || ""}
-                              onChange={(ev) => setEditForm({ ...editForm, dataValidade: ev.target.value })}
-                            />
-                          </div>
                         </div>
                       </div>
 
@@ -415,43 +398,84 @@ export default function Epis() {
                     </div>
                   </div>
                 ) : (
-                  <div key={e.id_epi} className={`${styles.row} ${styles.tableRow}`}>
-                    <span className={styles.compartimento}>{e.compartimento}</span>
-                    <span className={styles.nome}>{e.nome}</span>
-                    <span className={styles.ca}>{e.ca}</span>
-                    <span className={styles.categoria}>{e.categoria || "-"}</span>
-                    <span className={styles.quantidade}>
-                      {e.quantidade_estoque} / {e.quantidade_minima}
-                    </span>
-                    <span className={styles.statusCol}>
-                      <span
-                        className={`${styles.badge} ${getStatus(e) === "Disponível"
-                            ? styles.badgeDisponivel
-                            : styles.badgeBaixo
-                          }`}
-                      >
-                        {getStatus(e)}
+                  <>
+                    <div key={e.id_epi} className={`${styles.row} ${styles.tableRow} ${expandedId === e.id_epi ? styles.isExpanded : ""}`} onClick={() => setExpandedId(expandedId === e.id_epi ? null : e.id_epi)}>
+                      <span className={styles.compartimento}>{e.compartimento}</span>
+                      <span className={styles.nome}>{e.nome}</span>
+                      <span className={styles.categoria}>{e.categoria || "-"}</span>
+                      <span className={styles.quantidade}>
+                        {e.quantidade_estoque} / {e.quantidade_minima}
                       </span>
-                    </span>
-                    <div className={styles.actions}>
-                      <button
-                        className={styles.actionBtn}
-                        onClick={() => handleEditClick(e)}
-                        disabled={deletingId !== null}
-                        title="Editar"
-                      >
-                        <Edit size={16} strokeWidth={2} />
-                      </button>
-                      <button
-                        className={`${styles.actionBtn} ${styles.deleteBtn}`}
-                        onClick={() => handleDelete(e.id_epi)}
-                        disabled={editingId !== null || deletingId !== null}
-                        title="Excluir"
-                      >
-                        <Trash2 size={16} strokeWidth={2} />
-                      </button>
+                      <span className={styles.statusCol}>
+                        <span
+                          className={`${styles.badge} ${getStatus(e) === "Disponível"
+                              ? styles.badgeDisponivel
+                              : styles.badgeBaixo
+                            }`}
+                        >
+                          {getStatus(e)}
+                        </span>
+                      </span>
+                      <div className={styles.actions}>
+                        <button
+                          className={styles.actionBtn}
+                          onClick={(ev) => {
+                            ev.stopPropagation();
+                            handleEditClick(e);
+                          }}
+                          disabled={deletingId !== null}
+                          title="Editar"
+                        >
+                          <Edit size={16} strokeWidth={2} />
+                        </button>
+                        <button
+                          className={`${styles.actionBtn} ${styles.deleteBtn}`}
+                          onClick={(ev) => {
+                            ev.stopPropagation();
+                            handleDelete(e.id_epi);
+                          }}
+                          disabled={editingId !== null || deletingId !== null}
+                          title="Excluir"
+                        >
+                          <Trash2 size={16} strokeWidth={2} />
+                        </button>
+                        <span className={styles.expandArrow}>
+                          {expandedId === e.id_epi ? "▲" : "▼"}
+                        </span>
+                      </div>
                     </div>
-                  </div>
+
+                    {expandedId === e.id_epi && (
+                      <div key={`lotes-${e.id_epi}`} className={styles.loteRow}>
+                        <div className={styles.loteHeader}>
+                          <span>Lotes cadastrados</span>
+                          <span className={styles.loteBadge}>
+                            {e.lotes.length} lote{e.lotes.length > 1 ? "s" : ""}
+                          </span>
+                        </div>
+                        {e.lotes.length > 0 ? (
+                          e.lotes.map((l) => (
+                            <div key={l.id_lote} className={styles.loteBadge}>
+                              <span className={styles.loteNumero}>Lote {l.lote}</span>
+                              <span className={styles.loteQty}>
+                                {l.quantidade_disponivel}/{l.quantidade} un.
+                              </span>
+                              {l.data_validade ? (
+                                <span className={styles.loteVal}>
+                                  <Calendar size={14} strokeWidth={1.5} />
+                                  Val: {formatDateDisplay(l.data_validade)}
+                                </span>
+                              ) : null}
+                            </div>
+                          ))
+                        ) : (
+                          <div className={styles.loteEmpty}>
+                            Nenhum lote cadastrado.
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </>
                 )
               ))}
 

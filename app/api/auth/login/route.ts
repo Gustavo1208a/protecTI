@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     }
 
     const [rows] = await pool.execute(
-      `SELECT u.id_usuario, u.nome, u.senha, u.permissao, u.acesso_site, c.nome as cargo
+      `SELECT u.id_usuario, u.nome, u.senha, u.id_cargo, u.acesso_site, c.nome as cargo
        FROM usuario u
        LEFT JOIN cargo c ON u.id_cargo = c.id_cargo
        WHERE u.id_usuario = ?`,
@@ -51,16 +51,18 @@ export async function POST(request: NextRequest) {
     const token = await createToken({
       id: user.id_usuario,
       nome: user.nome,
-      permissao: user.permissao,
+      id_cargo: user.id_cargo,
       cargo: user.cargo,
+      acesso_site: user.acesso_site,
     });
 
     const response = NextResponse.json({
       user: {
         id: user.id_usuario,
         nome: user.nome,
-        permissao: user.permissao,
+        id_cargo: user.id_cargo,
         cargo: user.cargo,
+        acesso_site: user.acesso_site,
       },
     });
 

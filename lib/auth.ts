@@ -9,8 +9,9 @@ const JWT_EXPIRY = '1d';
 export interface TokenPayload {
   id: number;
   nome: string;
-  permissao: number;
+  id_cargo: number;
   cargo?: string;
+  acesso_site?: boolean;
 }
 
 export async function hashPassword(password: string): Promise<string> {

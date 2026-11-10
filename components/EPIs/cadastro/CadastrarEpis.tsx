@@ -21,14 +21,10 @@ const ARMARIOS = ["Armário 01", "Armário 02", "Armário 03"];
 export default function CadastrarEpi() {
   const [form, setForm] = useState({
     nome: "",
-    numeroCa: "",
     categoria: CATEGORIAS[0],
     tamanho: "",
     quantidadeInicial: "",
     quantidadeMinima: "",
-    lote: "",
-    dataFabricacao: "",
-    dataValidade: "",
     armario: ARMARIOS[0],
     compartimento: "",
   });
@@ -45,14 +41,10 @@ export default function CadastrarEpi() {
   function resetForm() {
     setForm({
       nome: "",
-      numeroCa: "",
       categoria: CATEGORIAS[0],
       tamanho: "",
       quantidadeInicial: "",
       quantidadeMinima: "",
-      lote: "",
-      dataFabricacao: "",
-      dataValidade: "",
       armario: ARMARIOS[0],
       compartimento: "",
     });
@@ -155,19 +147,6 @@ export default function CadastrarEpi() {
                 />
               </div>
               <div className={styles.field}>
-                <label htmlFor="numeroCa">Número do CA</label>
-                <input
-                  id="numeroCa"
-                  type="text"
-                  placeholder="CA 00000"
-                  value={form.numeroCa}
-                  onChange={(e) => update("numeroCa", e.target.value)}
-                  required
-                  disabled={loading || success}
-                />
-              </div>
-
-              <div className={styles.field}>
                 <label htmlFor="categoria">Categoria</label>
                 <select
                   id="categoria"
@@ -217,39 +196,6 @@ export default function CadastrarEpi() {
                   value={form.quantidadeMinima}
                   onChange={(e) => update("quantidadeMinima", e.target.value)}
                   required
-                  disabled={loading || success}
-                />
-              </div>
-
-              <div className={styles.field}>
-                <label htmlFor="lote">Lote</label>
-                <input
-                  id="lote"
-                  type="text"
-                  placeholder="LT-0000"
-                  value={form.lote}
-                  onChange={(e) => update("lote", e.target.value)}
-                  disabled={loading || success}
-                />
-              </div>
-            
-              <div className={styles.field}>
-                <label htmlFor="dataFabricacao">Data de fabricação</label>
-                <input
-                  id="dataFabricacao"
-                  type="date"
-                  value={form.dataFabricacao}
-                  onChange={(e) => update("dataFabricacao", e.target.value)}
-                  disabled={loading || success}
-                />
-              </div>
-              <div className={styles.field}>
-                <label htmlFor="dataValidade">Data de validade</label>
-                <input
-                  id="dataValidade"
-                  type="date"
-                  value={form.dataValidade}
-                  onChange={(e) => update("dataValidade", e.target.value)}
                   disabled={loading || success}
                 />
               </div>

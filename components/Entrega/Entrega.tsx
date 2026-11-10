@@ -54,6 +54,9 @@ export default function Entrega() {
   const [error, setError] = useState<string | null>(null);
   const [searchFunc, setSearchFunc] = useState("");
   const [searchEpi, setSearchEpi] = useState("");
+  const [lotes, setLotes] = useState<{ id_lote: number; lote: string; quantidade_disponivel: number }[]>([]);
+  const [loteSelecionado, setLoteSelecionado] = useState<string>("");
+  const [lotesLoading, setLotesLoading] = useState(false);
 
   const stepIndex = STEPS.findIndex((s) => s.key === step);
 
@@ -98,6 +101,33 @@ export default function Entrega() {
     }
   }, [step]);
 
+  useEffect(() => {
+    async function fetchLotes() {
+      if (!epi) return;
+      setLotesLoading(true);
+      try {
+        const res = await fetch(`/api/estoque/lotes?id_epi=${epi.id_epi}`);
+        const data = await res.json();
+        if (res.ok && Array.isArray(data.lotes)) {
+          setLotes(data.lotes.filter((l: any) => l.quantidade_disponivel > 0));
+        } else {
+          throw new Error(data.error || "Erro ao buscar lotes");
+        }
+      } catch (err) {
+        console.error(err);
+        setLotes([]);
+      } finally {
+        setLotesLoading(false);
+      }
+    }
+    if (step === "confirmacao") {
+      fetchLotes();
+    } else {
+      setLotes([]);
+      setLoteSelecionado("");
+    }
+  }, [step, epi]);
+
   function escolherFuncionario(f: Funcionario) {
     setFuncionario(f);
     setEpi(null);
@@ -117,7 +147,7 @@ export default function Entrega() {
   }
 
   async function confirmar() {
-    if (!funcionario || !epi) return;
+    if (!funcionario || !epi || !loteSelecionado) return;
     setLoading(true);
     setError(null);
     try {
@@ -127,6 +157,7 @@ export default function Entrega() {
         body: JSON.stringify({
           id_func: funcionario.id,
           id_epi: epi.id_epi,
+          lote: loteSelecionado || undefined,
           quantidade: 1,
         }),
       });
@@ -343,6 +374,30 @@ export default function Entrega() {
 
               <label htmlFor="c-validade">Validade do CA</label>
               <input id="c-validade" readOnly value={formatarData(epi.validade_ca)} />
+
+              <label htmlFor="c-lote">Lote</label>
+              <div id="c-lote-wrapper" className={styles.loteWrapper}>
+                {lotesLoading ? (
+                  <span className={styles.loteLoading}>Carregando lotes...</span>
+                ) : (
+                  <select
+                    id="c-lote"
+                    value={loteSelecionado}
+                    onChange={(ev) => setLoteSelecionado(ev.target.value)}
+                    disabled={lotes.length === 0}
+                  >
+                    <option value="">Selecione o lote</option>
+                    {lotes.map((lote) => (
+                      <option key={lote.id_lote} value={lote.lote}>
+                        {lote.lote} ({lote.quantidade_disponivel} disponíveis)
+                      </option>
+                    ))}
+                  </select>
+                )}
+                {lotes.length === 0 && !lotesLoading && (
+                  <span className={styles.loteEmpty}>Nenhum lote disponível</span>
+                )}
+              </div>
             </div>
 
             {error && (
@@ -356,7 +411,7 @@ export default function Entrega() {
               type="button"
               className={styles.confirmBtn}
               onClick={confirmar}
-              disabled={loading}
+              disabled={loading || !loteSelecionado}
             >
               {loading ? (
                 <>

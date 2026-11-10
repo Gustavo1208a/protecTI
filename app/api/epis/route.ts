@@ -20,60 +20,40 @@ export async function POST(request: NextRequest) {
   try {
     const {
       nome,
-      numeroCa,
       categoria,
       tamanho,
       quantidadeInicial,
       quantidadeMinima,
-      lote,
-      dataFabricacao,
-      dataValidade,
       armario,
       compartimento,
     } = await request.json();
 
-    if (!nome || !numeroCa || !compartimento) {
+    if (!nome || !compartimento) {
       return NextResponse.json(
-        { error: 'Nome, número do CA e compartimento são obrigatórios' },
+        { error: 'Nome e compartimento são obrigatórios' },
         { status: 400 }
       );
     }
 
-    // Check if CA already exists
-    const [existing] = await pool.execute(
-      'SELECT id_epi FROM epi WHERE ca = ?',
-      [numeroCa]
-    );
-
-    if ((existing as any[]).length > 0) {
-      return NextResponse.json(
-        { error: 'Já existe um EPI com esse número de CA' },
-        { status: 409 }
-      );
-    }
-
     const [result] = await pool.execute(
-      `INSERT INTO epi (nome, ca, validade_ca, quantidade_estoque, quantidade_minima, categoria, tamanho, lote, data_fabricacao, armario, compartimento)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO epi (nome, quantidade_estoque, quantidade_minima, categoria, tamanho, armario, compartimento)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [
         nome,
-        numeroCa,
-        dataValidade || null,
         parseInt(quantidadeInicial) || 0,
         parseInt(quantidadeMinima) || 0,
         categoria || null,
         tamanho || null,
-        lote || null,
-        dataFabricacao || null,
         armario || null,
         compartimento,
       ]
     );
 
     const insertResult = result as any;
+    const idEpi = insertResult.insertId;
 
     return NextResponse.json(
-      { message: 'EPI cadastrado com sucesso', id: insertResult.insertId },
+      { message: 'EPI cadastrado com sucesso', id: idEpi },
       { status: 201 }
     );
   } catch (error) {

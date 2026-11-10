@@ -4,6 +4,26 @@ import { verifyTokenEdge, getTokenFromHeader } from '@/lib/auth-edge';
 
 const publicPaths = ['/login', '/api/auth/login', '/api/auth/register', '/api/auth/me', '/api/arduino/auth', '/api/arduino/entrega'];
 
+const ROUTE_ID_CARGOS: Record<string, number[]> = {
+  '/funcionarios': [3],
+  '/epis': [2, 3],
+  '/estoque': [2, 3],
+  '/entrega': [2, 3],
+  '/devolucao': [2, 3],
+  '/alertas': [3, 4],
+  '/relatorios': [3, 4],
+  '/dashboard': [2, 3, 4],
+};
+
+function allowedFor(pathname: string, id_cargo: number): boolean {
+  for (const [route, cargos] of Object.entries(ROUTE_ID_CARGOS)) {
+    if (pathname.startsWith(route)) {
+      return cargos.includes(id_cargo);
+    }
+  }
+  return true;
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -34,6 +54,20 @@ export async function middleware(request: NextRequest) {
       path: '/',
     });
     return response;
+  }
+
+  // Usuários sem acesso ao site não podem acessar nenhuma rota protegida
+  if (!payload.acesso_site) {
+    const loginUrl = new URL('/login', request.url);
+    loginUrl.searchParams.set('redirect', pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  // Verifica se o cargo tem permissão para a rota
+  if (!allowedFor(pathname, payload.id_cargo)) {
+    const loginUrl = new URL('/login', request.url);
+    loginUrl.searchParams.set('error', 'sem_permissao');
+    return NextResponse.redirect(loginUrl);
   }
 
   return NextResponse.next();

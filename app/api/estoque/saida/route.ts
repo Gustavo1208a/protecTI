@@ -11,11 +11,12 @@ export async function POST(request: NextRequest) {
       data_saida,
       motivo,
       observacao = '',
+      lote: loteSelecionado = null,
     } = await request.json();
 
-    if (!id_epi || !quantidade || !data_saida || !motivo) {
+    if (!id_epi || !quantidade || !data_saida || !motivo || !loteSelecionado) {
       return NextResponse.json(
-        { error: 'EPI, quantidade, data de saída e motivo são obrigatórios' },
+        { error: 'EPI, quantidade, data de saída, motivo e lote são obrigatórios' },
         { status: 400 }
       );
     }
@@ -50,6 +51,41 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      if (loteSelecionado) {
+        const [loteRows] = await conn.execute(
+          'SELECT quantidade_disponivel FROM epi_lote WHERE id_epi = ? AND lote = ?',
+          [id_epi, loteSelecionado]
+        );
+        const loteList = loteRows as any[];
+        if (loteList.length === 0) {
+          await conn.rollback();
+          return NextResponse.json(
+            { error: 'Lote selecionado não encontrado para este EPI' },
+            { status: 400 }
+          );
+        }
+        if (loteList[0].quantidade_disponivel < qtdSaida) {
+          await conn.rollback();
+          return NextResponse.json(
+            { error: `Quantidade insuficiente no lote selecionado. Disponível: ${loteList[0].quantidade_disponivel}` },
+            { status: 400 }
+          );
+        }
+      } else {
+        const [loteRows] = await conn.execute(
+          'SELECT COUNT(*) as total FROM epi_lote WHERE id_epi = ? AND quantidade_disponivel > 0',
+          [id_epi]
+        );
+        const count = (loteRows as any[])[0].total;
+        if (count === 0) {
+          await conn.rollback();
+          return NextResponse.json(
+            { error: 'Este EPI não possui lotes cadastrados. Não é possível registrar saída.' },
+            { status: 400 }
+          );
+        }
+      }
+
       if (epi.quantidade_estoque < qtdSaida) {
         await conn.rollback();
         return NextResponse.json(
@@ -58,11 +94,41 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      // Baixar do(s) lote(s), priorizando o lote selecionado quando houver
+      let restante = qtdSaida;
+      let loteSaida = null;
+
+      if (loteSelecionado) {
+        await conn.execute(
+          'UPDATE epi_lote SET quantidade_disponivel = quantidade_disponivel - ? WHERE id_epi = ? AND lote = ?',
+          [qtdSaida, id_epi, loteSelecionado]
+        );
+        loteSaida = loteSelecionado;
+      } else {
+        const [lotes] = await conn.execute(
+          `SELECT id_lote, lote, quantidade_disponivel FROM epi_lote
+           WHERE id_epi = ? AND quantidade_disponivel > 0
+           ORDER BY criado_em ASC, id_lote ASC`,
+          [id_epi]
+        );
+        const loteList = lotes as any[];
+        loteSaida = loteList.length > 0 ? loteList[0].lote : null;
+        for (const loteRow of loteList) {
+          if (restante <= 0) break;
+          const baixar = Math.min(restante, loteRow.quantidade_disponivel);
+          await conn.execute(
+            'UPDATE epi_lote SET quantidade_disponivel = quantidade_disponivel - ? WHERE id_lote = ?',
+            [baixar, loteRow.id_lote]
+          );
+          restante -= baixar;
+        }
+      }
+
       // Create stock movement record
       const [movementResult] = await conn.execute(
-        `INSERT INTO movimentacao_estoque (id_epi, tipo, quantidade, armario, compartimento, motivo, observacao, data_movimentacao)
-         VALUES (?, 'saida', ?, ?, ?, ?, ?, ?)`,
-        [id_epi, qtdSaida, armario || null, compartimento || null, motivo, observacao || null, data_saida]
+        `INSERT INTO movimentacao_estoque (id_epi, tipo, quantidade, lote, armario, compartimento, motivo, observacao, data_movimentacao)
+         VALUES (?, 'saida', ?, ?, ?, ?, ?, ?, ?)`,
+        [id_epi, qtdSaida, loteSaida, armario || null, compartimento || null, motivo, observacao || null, data_saida]
       );
 
       const movementId = (movementResult as any).insertId;

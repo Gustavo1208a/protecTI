@@ -4,7 +4,7 @@ import pool from '@/lib/db';
 async function buildAlertas(conn: any) {
   // 1. EPIs com CA vencido
   const [caVencidos] = await conn.execute(
-    `SELECT e.id_epi, e.nome, e.ca, e.validade_ca
+    `SELECT e.id_epi, e.nome, e.validade_ca
      FROM epi e
      WHERE e.validade_ca IS NOT NULL AND e.validade_ca < CURDATE()
      ORDER BY e.validade_ca`
@@ -12,7 +12,7 @@ async function buildAlertas(conn: any) {
 
   // 2. EPIs com validade próxima (30 dias)
   const [caProximos] = await conn.execute(
-    `SELECT e.id_epi, e.nome, e.ca, e.validade_ca
+    `SELECT e.id_epi, e.nome, e.validade_ca
      FROM epi e
      WHERE e.validade_ca IS NOT NULL
        AND e.validade_ca >= CURDATE()
@@ -22,7 +22,7 @@ async function buildAlertas(conn: any) {
 
   // 3. EPIs com estoque abaixo do mínimo
   const [estoqueBaixo] = await conn.execute(
-    `SELECT e.id_epi, e.nome, e.ca, e.quantidade_estoque, e.quantidade_minima
+    `SELECT e.id_epi, e.nome, e.quantidade_estoque, e.quantidade_minima
      FROM epi e
      WHERE e.quantidade_estoque <= e.quantidade_minima AND e.quantidade_minima > 0
      ORDER BY e.quantidade_estoque / e.quantidade_minima`
@@ -48,7 +48,7 @@ async function buildAlertas(conn: any) {
     alertas.push({
       id: `AL-CA-${epi.id_epi}`,
       tipo: 'EPI com CA vencido',
-      item: `${epi.nome} (${epi.ca}) - Venceu em ${new Date(epi.validade_ca).toLocaleDateString('pt-BR')}`,
+      item: `${epi.nome} - Venceu em ${new Date(epi.validade_ca).toLocaleDateString('pt-BR')}`,
       prioridade: 'Alta' as const,
       categoria: 'vencimento_ca',
     });
@@ -60,7 +60,7 @@ async function buildAlertas(conn: any) {
     alertas.push({
       id: `AL-CA-${epi.id_epi}-prox`,
       tipo: 'Validade do CA próxima',
-      item: `${epi.nome} (${epi.ca}) - Vence em ${dias} dia(s)`,
+      item: `${epi.nome} - Vence em ${dias} dia(s)`,
       prioridade: 'Média' as const,
       categoria: 'vencimento_ca',
     });
@@ -71,7 +71,7 @@ async function buildAlertas(conn: any) {
     alertas.push({
       id: `AL-EST-${epi.id_epi}`,
       tipo: 'Estoque abaixo do mínimo',
-      item: `${epi.nome} (${epi.ca}) - Estoque: ${epi.quantidade_estoque} / Mín: ${epi.quantidade_minima}`,
+      item: `${epi.nome} - Estoque: ${epi.quantidade_estoque} / Mín: ${epi.quantidade_minima}`,
       prioridade: 'Alta' as const,
       categoria: 'estoque_baixo',
     });

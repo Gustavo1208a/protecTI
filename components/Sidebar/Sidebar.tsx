@@ -16,15 +16,22 @@ import { useAuth } from "@/components/AuthProvider/AuthProvider";
 import { useRouter } from "next/navigation";
 import styles from "./sidebar.module.css";
 
-const NAV_ITEMS = [
-  { label: "Dashboard", icon: LayoutGrid, href: "/dashboard" },
-  { label: "Funcionários", icon: Users, href: "/funcionarios" },
-  { label: "EPIs", icon: HardHat, href: "/epis" },
-  { label: "Estoque", icon: Boxes, href: "/estoque" },
-  { label: "Entrega", icon: Package, href: "/entrega" },
-  { label: "Devolução", icon: Undo2, href: "/devolucao" },
-  { label: "Alertas", icon: Bell, href: "/alertas" },
-  { label: "Relatórios", icon: FileBarChart2, href: "/relatorios" },
+type NavItem = {
+  label: string;
+  icon: React.ComponentType<{ size?: number | string; strokeWidth?: number | string }>;
+  href: string;
+  permissoes: number[];
+};
+
+const NAV_ITEMS: NavItem[] = [
+  { label: "Dashboard", icon: LayoutGrid, href: "/dashboard", permissoes: [2, 3, 4] },
+  { label: "Funcionários", icon: Users, href: "/funcionarios", permissoes: [3] },
+  { label: "EPIs", icon: HardHat, href: "/epis", permissoes: [2, 3] },
+  { label: "Estoque", icon: Boxes, href: "/estoque", permissoes: [2, 3] },
+  { label: "Entrega", icon: Package, href: "/entrega", permissoes: [2, 3] },
+  { label: "Devolução", icon: Undo2, href: "/devolucao", permissoes: [2, 3] },
+  { label: "Alertas", icon: Bell, href: "/alertas", permissoes: [3, 4] },
+  { label: "Relatórios", icon: FileBarChart2, href: "/relatorios", permissoes: [3, 4] },
 ];
 
 type SidebarProps = {
@@ -34,6 +41,13 @@ type SidebarProps = {
 export default function Sidebar({ active = "Dashboard" }: SidebarProps) {
   const { user, logout, loading } = useAuth();
   const router = useRouter();
+
+  const idCargo = user?.id_cargo ?? 0;
+  const temAcesso = user?.acesso_site ?? false;
+
+  const navItems = loading || !temAcesso
+    ? []
+    : NAV_ITEMS.filter((item) => item.permissoes.includes(idCargo));
 
   const handleLogout = async () => {
     await logout();
@@ -82,7 +96,7 @@ export default function Sidebar({ active = "Dashboard" }: SidebarProps) {
       </div>
 
       <nav className={styles.nav}>
-        {NAV_ITEMS.map(({ label, icon: Icon, href }) => {
+        {navItems.map(({ label, icon: Icon, href }) => {
           const isActive = label === active;
           return (
             <a

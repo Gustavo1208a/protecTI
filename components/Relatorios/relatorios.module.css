@@ -126,6 +126,13 @@
   color: var(--text-label);
   margin-bottom: 5px;
 }
+
+.field input[type="datetime-local"],
+.field input[type="date"] {
+  color-scheme: dark;
+  font-size: 12px;
+}
+
 .field input,
 .field select {
   width: 100%;
@@ -157,6 +164,17 @@
   background-size: 14px;
   padding-right: 28px;
   cursor: pointer;
+}
+
+.sortable {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 700;
+}
+.sortable.sort-active {
+  color: var(--yellow-1);
 }
 
 .gerarBtn {
@@ -304,11 +322,36 @@
 /* ---------- Table Wrapper (scrollable) ---------- */
 .tableWrapper {
   max-height: 40vh;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: auto;
   border: 1px solid var(--yellow-2);
   border-radius: 16px;
   background: rgba(20, 20, 22, 0.55);
+  scrollbar-width: thin;
+  scrollbar-color: #fbc531 rgba(242, 169, 12, 0.15);
+}
+
+.tableWrapper::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.tableWrapper::-webkit-scrollbar-track {
+  background: rgba(242, 169, 12, 0.08);
+  border-radius: 8px;
+}
+
+.tableWrapper::-webkit-scrollbar-thumb {
+  background: #fbc531;
+  border-radius: 8px;
+  border: 2px solid rgba(242, 169, 12, 0.15);
+}
+
+.tableWrapper::-webkit-scrollbar-thumb:hover {
+  background: #e3b32a;
+}
+
+.tableWrapper::-webkit-scrollbar-thumb:active {
+  background: #d4a020;
 }
 
 /* ---------- Tabela ---------- */
@@ -325,7 +368,7 @@
 
 .row {
   display: grid;
-  grid-template-columns: 0.9fr 1.4fr 1fr 1fr 1.3fr;
+  grid-template-columns: 0.8fr 1.8fr 1fr 1fr 1fr 1fr 1.2fr;
   align-items: center;
   gap: 12px;
   padding: 0 24px;
@@ -333,28 +376,37 @@
 
 .tableHead {
   height: 50px;
-  border-bottom: 1px solid rgba(242, 169, 12, 0.6);
+  border-bottom: 2px solid rgba(242, 169, 12, 0.6);
+  background: rgba(28, 28, 30, 0.4);
 }
 .tableHead span {
-  font-size: 13px;
-  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--yellow-1);
 }
 
 .tableRow {
-  height: 58px;
+  height: 56px;
   border-bottom: 1px solid rgba(242, 169, 12, 0.3);
+  transition: background 0.12s ease;
 }
 .tableRow:last-child {
   border-bottom: none;
 }
+.tableRow:hover {
+  background: rgba(242, 169, 12, 0.06);
+}
 .tableRow span {
-  font-size: 13.5px;
+  font-size: 13px;
   color: var(--text-main);
 }
 
 .idCell {
   font-weight: 700;
   color: var(--yellow-1) !important;
+  white-space: nowrap;
 }
 .funcionarioCell {
   color: var(--text-muted) !important;

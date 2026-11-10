@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { Package, Clock } from "lucide-react";
 import Sidebar from "@/components/Sidebar/Sidebar";
 import styles from "./dashboard.module.css";
@@ -35,6 +36,8 @@ type LastMovimentacao = {
 };
 
 export default function Dashboard() {
+  const pathname = usePathname();
+
   const [stats, setStats] = useState<Stats>({
     totalFuncionarios: 0,
     totalEpis: 0,
@@ -69,7 +72,7 @@ export default function Dashboard() {
       }
     }
     fetchDashboard();
-  }, []);
+  }, [pathname]);
 
   // Formata data para exibição
   function formatarData(iso: string) {

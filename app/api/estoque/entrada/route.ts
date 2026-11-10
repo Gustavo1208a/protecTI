@@ -7,17 +7,20 @@ export async function POST(request: NextRequest) {
       id_epi,
       lote,
       quantidade,
-      data_entrada,
+      data_fabricacao,
       data_validade,
       observacao = '',
     } = await request.json();
 
-    if (!id_epi || !quantidade || !data_entrada) {
+    if (!id_epi || !lote || !quantidade || !data_fabricacao || !data_validade) {
       return NextResponse.json(
-        { error: 'EPI, quantidade e data de entrada são obrigatórios' },
+        { error: 'EPI, lote, quantidade, data de fabricação e validade são obrigatórios' },
         { status: 400 }
       );
     }
+
+    // Data de entrada é registrada automaticamente (timestamp atual)
+    const dataEntrada = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
     const conn = await pool.getConnection();
     try {
@@ -53,7 +56,7 @@ export async function POST(request: NextRequest) {
       const [movementResult] = await conn.execute(
         `INSERT INTO movimentacao_estoque (id_epi, tipo, quantidade, lote, data_validade, observacao, data_movimentacao)
          VALUES (?, 'entrada', ?, ?, ?, ?, ?)`,
-        [id_epi, qtdEntrada, lote || null, data_validade || null, observacao || null, data_entrada]
+        [id_epi, qtdEntrada, lote || null, data_validade || null, observacao || null, dataEntrada]
       );
 
       const movementId = (movementResult as any).insertId;
@@ -64,18 +67,26 @@ export async function POST(request: NextRequest) {
         [qtdEntrada, id_epi]
       );
 
-      // Check if stock was below minimum and now is above - create alert if still below minimum
-      const [updatedEpiRows] = await conn.execute(
-        'SELECT quantidade_estoque, quantidade_minima, nome FROM epi WHERE id_epi = ?',
-        [id_epi]
+      // Registrar/atualizar lote de estoque (segunda leva, etc.)
+      const loteNumero = lote || `LOTE-${Date.now()}`;
+      const [existingLote] = await conn.execute(
+        'SELECT id_lote, quantidade_disponivel FROM epi_lote WHERE id_epi = ? AND lote = ?',
+        [id_epi, loteNumero]
       );
 
-      const updatedEpi = (updatedEpiRows as any[])[0];
-      if (updatedEpi.quantidade_estoque <= updatedEpi.quantidade_minima && updatedEpi.quantidade_minima > 0) {
+      if ((existingLote as any[]).length > 0) {
+        // Atualizar lote existente (reposição do mesmo lote)
         await conn.execute(
-          `INSERT INTO alertas (tipo, mensagem)
-           VALUES ('estoque_baixo', ?)`,
-          [`Estoque baixo para ${updatedEpi.nome}: ${updatedEpi.quantidade_estoque} unidades (mínimo: ${updatedEpi.quantidade_minima})`]
+          `UPDATE epi_lote SET quantidade = quantidade + ?, quantidade_disponivel = quantidade_disponivel + ?
+           WHERE id_lote = ?`,
+          [qtdEntrada, qtdEntrada, (existingLote as any[])[0].id_lote]
+        );
+      } else {
+        // Criar novo lote
+        await conn.execute(
+          `INSERT INTO epi_lote (id_epi, lote, quantidade, quantidade_disponivel, data_fabricacao, data_validade)
+           VALUES (?, ?, ?, ?, ?, ?)`,
+          [id_epi, loteNumero, qtdEntrada, qtdEntrada, data_fabricacao || null, data_validade || null]
         );
       }
 
@@ -86,7 +97,7 @@ export async function POST(request: NextRequest) {
           await conn.execute(
             `INSERT INTO alertas (tipo, mensagem)
              VALUES ('vencimento_ca', ?)`,
-            [`EPI com validade vencida: ${updatedEpi.nome} (Lote: ${lote}, Validade: ${data_validade})`]
+            [`EPI com validade vencida: ${epi.nome} (Lote: ${loteNumero}, Validade: ${data_validade})`]
           );
         }
       }

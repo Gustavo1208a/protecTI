@@ -10,9 +10,12 @@ type Acao = "Entrega" | "Devolução" | "Entrada" | "Saída";
 type Movimentacao = {
   id: string;
   funcionario: string;
+  matricula?: string | null;
+  setor?: string | null;
   quantidade: number;
   acao: Acao;
   data: string; // dd/mm/aaaa hh:mm
+  lote?: string | null;
 };
 
 type Resumo = {
@@ -64,11 +67,27 @@ function csvEscape(valor: string | number) {
 }
 
 async function exportarCsv(linhas: Movimentacao[]) {
-  const cabecalho = ["ID", "Funcionário", "Quantidade", "Ação", "Data"];
-  // Ponto e vírgula como separador: é o padrão que o Excel em português do
-  // Brasil espera, já que a vírgula é usada como separador decimal.
+  const cabecalho = [
+    "ID",
+    "Funcionário",
+    "Matrícula",
+    "Setor",
+    "Quantidade",
+    "Ação",
+    "Lote",
+    "Data",
+  ];
   const corpo = linhas.map((m) =>
-    [m.id, m.funcionario, m.quantidade, m.acao, m.data].map(csvEscape).join(";")
+    [
+      m.id,
+      m.funcionario,
+      m.matricula || "-",
+      m.setor || "-",
+      m.quantidade,
+      m.acao,
+      m.lote || "-",
+      m.data,
+    ].map(csvEscape).join(";")
   );
   const conteudo = "\uFEFF" + [cabecalho.join(";"), ...corpo].join("\r\n");
   const nomeArquivo = `relatorio-protecti-${Date.now()}.csv`;
@@ -80,8 +99,6 @@ async function exportarCsv(linhas: Movimentacao[]) {
   ).showSaveFilePicker;
 
   if (showSaveFilePicker) {
-    // Abre o explorador de arquivos do sistema operacional para o usuário
-    // escolher onde salvar (suportado em navegadores baseados em Chromium).
     try {
       const handle = await showSaveFilePicker({
         suggestedName: nomeArquivo,
@@ -92,14 +109,10 @@ async function exportarCsv(linhas: Movimentacao[]) {
       await writable.close();
       return;
     } catch (err) {
-      // Usuário cancelou a janela ou o navegador negou a permissão:
-      // cai para o download comum abaixo.
       if ((err as DOMException)?.name === "AbortError") return;
     }
   }
 
-  // Navegadores sem suporte a showSaveFilePicker (ex.: Firefox) recebem o
-  // download padrão, que abre a caixa "Salvar como" do navegador.
   const blob = new Blob([conteudo], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
@@ -138,19 +151,21 @@ function TableRowSkeleton() {
       <Skeleton width="100%" height="14px" />
       <Skeleton width="100%" height="14px" />
       <Skeleton width="100%" height="14px" />
+      <Skeleton width="100%" height="14px" />
+      <Skeleton width="100%" height="14px" />
     </div>
   );
 }
 
-const SETORES = ["Produção", "Manutenção", "Logística", "Almoxarifado", "Segurança", "Prevenção", "Gerência"];
+const SETORES = ["Segurança do Trabalho"];
 
 export default function Relatorios() {
   // Initialize default dates for current month
   const pad2 = (n: number) => String(n).padStart(2, '0');
   const hoje = new Date();
   const primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-  const defaultInicio = `${pad2(primeiroDia.getDate())}/${pad2(primeiroDia.getMonth() + 1)}/${primeiroDia.getFullYear()}`;
-  const defaultFim = `${pad2(hoje.getDate())}/${pad2(hoje.getMonth() + 1)}/${hoje.getFullYear()}`;
+  const defaultInicio = `${primeiroDia.getFullYear()}-${pad2(primeiroDia.getMonth() + 1)}-${pad2(primeiroDia.getDate())}`;
+  const defaultFim = `${hoje.getFullYear()}-${pad2(hoje.getMonth() + 1)}-${pad2(hoje.getDate())}`;
 
   const [inicio, setInicio] = useState(defaultInicio);
   const [fim, setFim] = useState(defaultFim);
@@ -160,12 +175,17 @@ export default function Relatorios() {
     inicio: defaultInicio,
     fim: defaultFim,
     setor: "TODOS",
-    funcionario: "TODOS"
+    funcionario: "TODOS",
+    acao: "TODOS"
   });
   const [data, setData] = useState<RelatorioData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [funcionarios, setFuncionarios] = useState<Funcionario[]>([]);
+
+  // Sorting state
+  const [sortKey, setSortKey] = useState<"funcionario" | "setor" | "quantidade" | "acao" | "data" | null>(null);
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
   // Fetch funcionarios for dropdown
   useEffect(() => {
@@ -188,6 +208,7 @@ export default function Relatorios() {
       if (filtros.fim) params.set('fim', filtroParaApi(filtros.fim));
       if (filtros.setor && filtros.setor !== 'TODOS') params.set('setor', filtros.setor);
       if (filtros.funcionario && filtros.funcionario !== 'TODOS') params.set('funcionario', filtros.funcionario);
+      if (filtros.acao && filtros.acao !== 'TODOS') params.set('acao', filtros.acao);
 
       const res = await fetch(`/api/relatorios?${params.toString()}`);
       const result = await res.json();
@@ -201,51 +222,99 @@ export default function Relatorios() {
     }
   };
 
-  // Converte dd/mm/aaaa para aaaa-mm-dd para API
-  function filtroParaApi(dataBr: string) {
-    const [dia, mes, ano] = dataBr.split("/");
-    if (!dia || !mes || !ano || ano.length < 4) return "";
-    return `${ano}-${mes}-${dia}`;
+  // Converte dd/mm/aaaa para aaaa-mm-dd para API (aceita ambos os formatos)
+  function filtroParaApi(data: string) {
+    const slash = data.split("/");
+    if (slash.length === 3) {
+      const [dia, mes, ano] = slash;
+      if (!dia || !mes || !ano || ano.length < 4) return "";
+      return `${ano}-${mes}-${dia}`;
+    }
+    return data;
   }
 
   useEffect(() => {
     fetchRelatorio();
   }, [filtros]);
 
-  const [searchTerm, setSearchTerm] = useState("");
-  const [searchField, setSearchField] = useState<"all" | "id" | "funcionario" | "acao" | "data">("all");
+  const linhasBase = data?.movimentacoes || [];
+  const resumo = data?.resumo ?? { entregas: 0, devolucoes: 0, estoqueAtual: 0 };
 
-  const linhasFiltradas = data?.movimentacoes || [];
-  const resumo = data?.resumo || { entregas: 0, devolucoes: 0, estoqueAtual: 0 };
+  // Aplicar filtro de ação (quando clicado na coluna) e ordenação
+  const linhas = useMemo(() => {
+    let resultado = [...linhasBase];
 
-  // Filtrar linhas pela busca
-  const linhasComBusca = searchTerm
-    ? linhasFiltradas.filter((m) => {
-        const term = searchTerm.toLowerCase();
-        switch (searchField) {
-          case "id":
-            return m.id.toLowerCase().includes(term);
+    // Filtro por ação
+    if (filtros.acao && filtros.acao !== 'TODOS') {
+      resultado = resultado.filter(m => m.acao === filtros.acao);
+    }
+
+    // Ordenação
+    if (sortKey) {
+      resultado.sort((a, b) => {
+        let va: string | number;
+        let vb: string | number;
+        switch (sortKey) {
           case "funcionario":
-            return m.funcionario.toLowerCase().includes(term);
+            va = (a.funcionario || "").toLowerCase();
+            vb = (b.funcionario || "").toLowerCase();
+            break;
+          case "setor":
+            va = (a.setor || "").toLowerCase();
+            vb = (b.setor || "").toLowerCase();
+            break;
+          case "quantidade":
+            va = a.quantidade;
+            vb = b.quantidade;
+            break;
           case "acao":
-            return m.acao.toLowerCase().includes(term);
+            va = a.acao;
+            vb = b.acao;
+            break;
           case "data":
-            return m.data.toLowerCase().includes(term);
+            va = paraChaveOrdenavel(a.data);
+            vb = paraChaveOrdenavel(b.data);
+            break;
           default:
-            return (
-              m.id.toLowerCase().includes(term) ||
-              m.funcionario.toLowerCase().includes(term) ||
-              m.acao.toLowerCase().includes(term) ||
-              m.data.toLowerCase().includes(term) ||
-              String(m.quantidade).includes(term)
-            );
+            va = "";
+            vb = "";
         }
-      })
-    : linhasFiltradas;
+        if (va < vb) return sortDir === "asc" ? -1 : 1;
+        if (va > vb) return sortDir === "asc" ? 1 : -1;
+        return 0;
+      });
+    }
+
+    return resultado;
+  }, [linhasBase, filtros.acao, sortKey, sortDir]);
 
   function handleGerar(e: FormEvent) {
     e.preventDefault();
-    setFiltros({ inicio, fim, setor, funcionario });
+    setFiltros(prev => ({ ...prev, inicio, fim, setor, funcionario }));
+  }
+
+  // Ordem atual da coluna (asc/desc/none) para exibir seta
+  function colunaOrdem(key: MovimentacaoColumn): "asc" | "desc" | null {
+    if (sortKey !== key) return null;
+    return sortDir;
+  }
+
+  type MovimentacaoColumn = "funcionario" | "setor" | "quantidade" | "acao" | "data";
+
+  function handleColunaClick(key: MovimentacaoColumn) {
+    if (sortKey === key) {
+      setSortDir(sortDir === "asc" ? "desc" : "asc");
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  }
+
+  function handleAcaoClick(acaoValor: Acao) {
+    setFiltros(prev => ({
+      ...prev,
+      acao: prev.acao === acaoValor ? "TODOS" : acaoValor,
+    }));
   }
 
   return (
@@ -263,8 +332,8 @@ export default function Relatorios() {
           <button
             type="button"
             className={styles.exportBtn}
-            onClick={() => exportarCsv(linhasComBusca)}
-            disabled={loading || linhasFiltradas.length === 0}
+            onClick={() => exportarCsv(linhas)}
+            disabled={loading || linhas.length === 0}
           >
             <Download size={16} strokeWidth={2} />
             Exportar CSV
@@ -276,13 +345,9 @@ export default function Relatorios() {
             <label htmlFor="rel-inicio">Início</label>
             <input
               id="rel-inicio"
-              type="text"
-              inputMode="numeric"
-              autoComplete="off"
-              maxLength={10}
-              placeholder="dd/mm/aaaa"
+              type="date"
               value={inicio}
-              onChange={(e) => setInicio(mascaraData(e.target.value))}
+              onChange={(e) => setInicio(e.target.value)}
               disabled={loading}
             />
           </div>
@@ -290,13 +355,9 @@ export default function Relatorios() {
             <label htmlFor="rel-fim">Fim</label>
             <input
               id="rel-fim"
-              type="text"
-              inputMode="numeric"
-              autoComplete="off"
-              maxLength={10}
-              placeholder="dd/mm/aaaa"
+              type="date"
               value={fim}
-              onChange={(e) => setFim(mascaraData(e.target.value))}
+              onChange={(e) => setFim(e.target.value)}
               disabled={loading}
             />
           </div>
@@ -329,6 +390,22 @@ export default function Relatorios() {
             </select>
           </div>
 
+          <div className={styles.field}>
+            <label htmlFor="rel-acao">Ação</label>
+            <select
+              id="rel-acao"
+              value={filtros.acao}
+              onChange={(e) => setFiltros(prev => ({ ...prev, acao: e.target.value }))}
+              disabled={loading}
+            >
+              <option value="TODOS">TODAS</option>
+              <option value="Entrega">Entrega</option>
+              <option value="Devolução">Devolução</option>
+              <option value="Entrada">Entrada</option>
+              <option value="Saída">Saída</option>
+            </select>
+          </div>
+
           <button type="submit" className={styles.gerarBtn} disabled={loading}>
             {loading ? (
               <>
@@ -353,8 +430,10 @@ export default function Relatorios() {
               <div className={`${styles.row} ${styles.tableHead}`}>
                 <span>ID</span>
                 <span>Funcionário</span>
+                <span>Setor</span>
                 <span>Quantidade</span>
                 <span>Ação</span>
+                <span>Lote</span>
                 <span>Data</span>
               </div>
               {Array.from({ length: 4 }).map((_, i) => (
@@ -391,54 +470,89 @@ export default function Relatorios() {
             <div className={styles.tableSection}>
               <div className={styles.tableHeaderRow}>
                 <h2 className={styles.sectionTitle}>Movimentações</h2>
-                <div className={styles.searchBar}>
-                  <select
-                    value={searchField}
-                    onChange={(e) => setSearchField(e.target.value as "all" | "id" | "funcionario" | "acao" | "data")}
-                    disabled={loading}
-                    className={styles.searchFieldSelect}
-                  >
-                    <option value="all">Todos</option>
-                    <option value="id">ID</option>
-                    <option value="funcionario">Funcionário</option>
-                    <option value="acao">Ação</option>
-                    <option value="data">Data</option>
-                  </select>
-                  <input
-                    type="text"
-                    placeholder="Buscar na tabela..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    disabled={loading}
-                    className={styles.searchInput}
-                  />
-                </div>
               </div>
               <div className={styles.tableWrapper}>
                 <div className={styles.tableCard}>
                   <div className={`${styles.row} ${styles.tableHead}`}>
                     <span>ID</span>
-                    <span>Funcionário</span>
-                    <span>Quantidade</span>
-                    <span>Ação</span>
-                    <span>Data</span>
+                    <span
+                      className={`${styles.sortable} ${colunaOrdem("funcionario") ? "sort-active" : ""}`}
+                      onClick={() => handleColunaClick("funcionario")}
+                    >
+                      Funcionário
+                      {sortKey === "funcionario" && (sortDir === "asc" ? " ▲" : " ▼")}
+                    </span>
+                    <span
+                      className={`${styles.sortable} ${colunaOrdem("setor") ? "sort-active" : ""}`}
+                      onClick={() => handleColunaClick("setor")}
+                    >
+                      Setor
+                      {sortKey === "setor" && (sortDir === "asc" ? " ▲" : " ▼")}
+                    </span>
+                    <span
+                      className={`${styles.sortable} ${colunaOrdem("quantidade") ? "sort-active" : ""}`}
+                      onClick={() => handleColunaClick("quantidade")}
+                    >
+                      Quantidade
+                      {sortKey === "quantidade" && (sortDir === "asc" ? " ▲" : " ▼")}
+                    </span>
+                    <span
+                      className={`${styles.sortable} ${colunaOrdem("acao") ? "sort-active" : ""}`}
+                      onClick={() => handleColunaClick("acao")}
+                    >
+                      Ação
+                      {sortKey === "acao" && (sortDir === "asc" ? " ▲" : " ▼")}
+                    </span>
+                    <span>Lote</span>
+                    <span
+                      className={`${styles.sortable} ${colunaOrdem("data") ? "sort-active" : ""}`}
+                      onClick={() => handleColunaClick("data")}
+                    >
+                      Data
+                      {sortKey === "data" && (sortDir === "asc" ? " ▲" : " ▼")}
+                    </span>
                   </div>
 
-                  {linhasComBusca.map((m) => (
+                  {linhas.map((m) => (
                     <div className={`${styles.row} ${styles.tableRow}`} key={m.id}>
                       <span className={styles.idCell}>{m.id}</span>
                       <span className={styles.funcionarioCell}>{m.funcionario}</span>
-                      <span>{m.quantidade}</span>
-                      <span className={styles.acaoCell}>{m.acao}</span>
-                      <span className={styles.dataCell}>{m.data}</span>
+                      <span
+                        className={styles.funcionarioCell}
+                        onClick={() => handleColunaClick("setor")}
+                        style={{ cursor: "pointer" }}
+                      >
+                        {m.setor || "-"}
+                      </span>
+                      <span
+                        className={styles.funcionarioCell}
+                        onClick={() => handleColunaClick("quantidade")}
+                        style={{ cursor: "pointer" }}
+                      >
+                        {m.quantidade}
+                      </span>
+                      <span
+                        className={`${styles.acaoCell}`}
+                        onClick={() => handleAcaoClick(m.acao)}
+                        style={{ cursor: "pointer" }}
+                        title="Filtrar por esta ação"
+                      >
+                        {m.acao}
+                      </span>
+                      <span>{m.lote || "-"}</span>
+                      <span
+                        className={styles.dataCell}
+                        onClick={() => handleColunaClick("data")}
+                        style={{ cursor: "pointer" }}
+                      >
+                        {m.data}
+                      </span>
                     </div>
                   ))}
 
-                  {linhasComBusca.length === 0 && (
+                  {linhas.length === 0 && (
                     <div className={styles.tableEmpty}>
-                      {searchTerm
-                        ? "Nenhuma movimentação encontrada para a busca."
-                        : "Nenhuma movimentação encontrada para os filtros selecionados."}
+                      "Nenhuma movimentação encontrada para os filtros selecionados."
                     </div>
                   )}
                 </div>

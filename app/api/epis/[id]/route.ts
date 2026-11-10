@@ -9,62 +9,37 @@ export async function PUT(
     const { id } = await params;
     const {
       nome,
-      numeroCa,
       categoria,
       tamanho,
       quantidadeInicial,
       quantidadeMinima,
-      lote,
-      dataFabricacao,
-      dataValidade,
       armario,
       compartimento,
     } = await request.json();
 
-    if (!nome || !numeroCa || !compartimento) {
+    if (!nome || !compartimento) {
       return NextResponse.json(
-        { error: 'Nome, número do CA e compartimento são obrigatórios' },
+        { error: 'Nome e compartimento são obrigatórios' },
         { status: 400 }
-      );
-    }
-
-    // Check if CA already exists for another EPI
-    const [existing] = await pool.execute(
-      'SELECT id_epi FROM epi WHERE ca = ? AND id_epi != ?',
-      [numeroCa, id]
-    );
-
-    if ((existing as any[]).length > 0) {
-      return NextResponse.json(
-        { error: 'Já existe um EPI com esse número de CA' },
-        { status: 409 }
       );
     }
 
     const [result] = await pool.execute(
       `UPDATE epi SET
         nome = ?,
-        ca = ?,
-        validade_ca = ?,
         quantidade_estoque = ?,
         quantidade_minima = ?,
         categoria = ?,
         tamanho = ?,
-        lote = ?,
-        data_fabricacao = ?,
         armario = ?,
         compartimento = ?
        WHERE id_epi = ?`,
       [
         nome,
-        numeroCa,
-        dataValidade || null,
         parseInt(quantidadeInicial) || 0,
         parseInt(quantidadeMinima) || 0,
         categoria || null,
         tamanho || null,
-        lote || null,
-        dataFabricacao || null,
         armario || null,
         compartimento,
         id,
@@ -99,6 +74,15 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
+
+    // Remove registros dependentes antes de excluir o EPI (FK sem ON DELETE CASCADE)
+    await pool.execute(
+      'DELETE devolucao_epi FROM devolucao_epi INNER JOIN entrega_epi ON devolucao_epi.id_entrega = entrega_epi.id_entrega WHERE entrega_epi.id_epi = ?',
+      [id]
+    );
+    await pool.execute('DELETE FROM entrega_epi WHERE id_epi = ?', [id]);
+    await pool.execute('DELETE FROM movimentacao_estoque WHERE id_epi = ?', [id]);
+    // epi_lote possui ON DELETE CASCADE e é removido automaticamente
 
     const [result] = await pool.execute(
       'DELETE FROM epi WHERE id_epi = ?',

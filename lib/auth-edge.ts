@@ -7,8 +7,9 @@ const JWT_SECRET = new TextEncoder().encode(
 export interface TokenPayload {
   id: number;
   nome: string;
-  permissao: number;
+  id_cargo: number;
   cargo?: string;
+  acesso_site?: boolean;
 }
 
 export async function verifyTokenEdge(token: string): Promise<TokenPayload | null> {

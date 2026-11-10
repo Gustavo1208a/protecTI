@@ -5,7 +5,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 interface User {
   id: number;
   nome: string;
-  permissao: number;
+  id_cargo: number;
   cargo?: string;
   acesso_site?: boolean;
 }
