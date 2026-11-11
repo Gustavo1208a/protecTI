@@ -40,6 +40,7 @@ export async function POST(request: NextRequest) {
 
     const response = NextResponse.json({
         autorizado: true,
+        id_func: user.id_func,
         tem_epis_disponiveis: true,
         funcionario: {
             matricula: user.matricula,

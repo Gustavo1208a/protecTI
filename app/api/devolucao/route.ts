@@ -5,6 +5,7 @@ export async function POST(request: NextRequest) {
   try {
     const {
       id_entrega,
+      id_func,
       estado = 'bom',
       observacao = '',
       quantidade = 1,
@@ -39,7 +40,7 @@ export async function POST(request: NextRequest) {
 
       // Get delivery info and check if it exists
       const [entregaRows] = await conn.execute(
-        `SELECT e.id_entrega, e.id_func, e.id_epi, e.quantidade as qtd_entregue,
+        `SELECT e.id_entrega, e.id_func, e.id_epi, e.lote, e.quantidade as qtd_entregue,
                 ep.nome as epi_nome, ep.quantidade_estoque, ep.quantidade_minima, ep.compartimento,
                 f.nome as funcionario_nome
          FROM entrega_epi e
@@ -59,6 +60,15 @@ export async function POST(request: NextRequest) {
       }
 
       const entrega = entregas[0];
+
+      // Validação de negócio: se id_func foi informado, a entrega deve pertencer a ele
+      if (id_func && entrega.id_func !== Number(id_func)) {
+        await conn.rollback();
+        return NextResponse.json(
+          { error: 'Esta entrega não pertence ao funcionário informado' },
+          { status: 403 }
+        );
+      }
 
       // Check how many items have already been returned for this delivery
       // (each devolucao_epi row = 1 item since table doesn't have quantidade column)
@@ -102,6 +112,16 @@ export async function POST(request: NextRequest) {
         'UPDATE epi SET quantidade_estoque = quantidade_estoque + ? WHERE id_epi = ?',
         [qtdDevolver, entrega.id_epi]
       );
+
+      // Restore lot availability for FIFO deliveries
+      if (entrega.lote) {
+        await conn.execute(
+          `UPDATE epi_lote
+           SET quantidade_disponivel = quantidade_disponivel + ?
+           WHERE id_epi = ? AND lote = ?`,
+          [qtdDevolver, entrega.id_epi, entrega.lote]
+        );
+      }
 
       // Create movimentacao_estoque record for the return
       await conn.execute(
